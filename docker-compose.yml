@@ -337,7 +337,8 @@ services:
         - /lib/modules:/lib/modules:ro
 
     source-nat-rewrite:
-      build: data/Dockerfiles/source-nat-rewrite
+      image: mailcow/source-nat-rewrite:1.0
+      build: ./data/Dockerfiles/source-nat-rewrite
       restart: always
       network_mode: "host"
       pid: "host"
