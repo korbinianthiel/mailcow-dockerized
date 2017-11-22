@@ -339,6 +339,7 @@ services:
     source-nat-rewrite:
       build: ./data/Dockerfiles/source-nat-rewrite
       restart: always
+      privileged: true
       network_mode: "host"
       pid: "host"
       environment:
