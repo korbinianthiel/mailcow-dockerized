@@ -336,22 +336,6 @@ services:
         - /var/run/docker.sock:/var/run/docker.sock:ro
         - /lib/modules:/lib/modules:ro
 
-    source-nat-rewrite:
-      build: ./data/Dockerfiles/source-nat-rewrite
-      restart: always
-      privileged: true
-      network_mode: "host"
-      pid: "host"
-      environment:
-        - REWRITE_OUTGOING_IP4=${REWRITE_OUTGOING_IP4}
-        - REWRITE_OUTGOING_IP4_INTERFACE_TO=${REWRITE_OUTGOING_IP4_INTERFACE_TO}
-        - REWRITE_OUTGOING_IP4_TO=${REWRITE_OUTGOING_IP4_TO}
-        - REWRITE_OUTGOING_IP6=${REWRITE_OUTGOING_IP6}
-        - REWRITE_OUTGOING_IP6_INTERFACE_TO=${REWRITE_OUTGOING_IP6_INTERFACE_TO}
-        - REWRITE_OUTGOING_IP6_TO=${REWRITE_OUTGOING_IP6_TO}
-      volumes:
-        - ./data/conf/source-nat-rewrite/rules.sh:/rules.sh
-
 networks:
   mailcow-network:
     driver: bridge
