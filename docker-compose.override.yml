@@ -1,0 +1,38 @@
+version: '2.1'
+services:
+
+    unbound-mailcow:
+      labels:
+        - traefik.enable=false
+
+    mysql-mailcow:
+      labels:
+        - traefik.enable=false
+
+    redis-mailcow:
+      labels:
+        - traefik.enable=false
+
+    clamd-mailcow:
+      labels:
+        - traefik.enable=false
+
+    php-fpm-mailcow:
+      labels:
+        - traefik.enable=false
+
+    dovecot-mailcow:
+      labels:
+        - traefik.enable=false
+
+    postfix-mailcow:
+      labels:
+        - traefik.enable=false
+
+    memcached-mailcow:
+      labels:
+        - traefik.enable=false
+
+    nginx-mailcow:
+      labels:
+        - traefik.enable=false
