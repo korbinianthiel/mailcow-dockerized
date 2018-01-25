@@ -151,11 +151,14 @@ services:
         - DBPASS=${DBPASS}
       ports:
         - "${DOVEADM_PORT:-127.0.0.1:19991}:12345"
-        - "${IMAP_PORT:-143}:143"
-        - "${IMAPS_PORT:-993}:993"
-        - "${POP_PORT:-110}:110"
-        - "${POPS_PORT:-995}:995"
-        - "${SIEVE_PORT:-4190}:4190"
+        - "5.1.76.86:143:143"
+        - "2a00:f820:417::df6c:5749:143:143"
+        - "5.1.76.86:993:993"
+        - "2a00:f820:417::df6c:5749:110:110"
+        - "5.1.76.86:995:995"
+        - "2a00:f820:417::df6c:5749:995:995"
+        - "5.1.76.86:4190:4190"
+        - "2a00:f820:417::df6c:5749:4190:4190"
       restart: always
       ulimits:
         nproc: 65535
@@ -183,9 +186,12 @@ services:
         - DBUSER=${DBUSER}
         - DBPASS=${DBPASS}
       ports:
-        - "${SMTP_PORT:-25}:25"
-        - "${SMTPS_PORT:-465}:465"
-        - "${SUBMISSION_PORT:-587}:587"
+        - "5.1.76.86:25:25"
+        - "2a00:f820:417::df6c:5749:25:25"
+        - "5.1.76.86:465:465"
+        - "2a00:f820:417::df6c:5749:465:465"
+        - "5.1.76.86:587:587"
+        - "2a00:f820:417::df6c:5749:587:587"
       restart: always
       dns:
         - 172.22.1.254
@@ -229,8 +235,10 @@ services:
         - ./data/assets/ssl/:/etc/ssl/mail/:ro
         - ./data/conf/nginx/:/etc/nginx/conf.d/:rw
       ports:
-        - "${HTTPS_BIND:-0.0.0.0}:${HTTPS_PORT:-443}:${HTTPS_PORT:-443}"
-        - "${HTTP_BIND:-0.0.0.0}:${HTTP_PORT:-80}:${HTTP_PORT:-80}"
+        - "5.1.76.86:80:80"
+        - "2a00:f820:417::df6c:5749:80:80"
+        - "5.1.76.86:443:443"
+        - "2a00:f820:417::df6c:5749:443:443"
       restart: always
       dns:
         - 172.22.1.254
