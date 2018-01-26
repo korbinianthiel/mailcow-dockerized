@@ -16,7 +16,8 @@ done
 
 [[ ${NC_PURGE} == "y" ]] && [[ ${NC_INSTALL} == "y" ]] && { echo "Cannot use -p and -i at the same time"; }
 
-source ./mailcow.conf
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source ${SCRIPT_DIR}/../mailcow.conf
 
 if [[ ${NC_PURGE} == "y" ]]; then
 
@@ -31,7 +32,7 @@ if [[ ${NC_PURGE} == "y" ]]; then
 	[[ -f ./data/conf/nginx/site.nextcloud.custom ]] && mv ./data/conf/nginx/site.nextcloud.custom ./data/conf/nginx/site.nextcloud.custom-$(date +%s).bak
 	[[ -f ./data/conf/nginx/nextcloud.conf ]] && mv ./data/conf/nginx/nextcloud.conf ./data/conf/nginx/nextcloud.conf-$(date +%s).bak
 
-	docker-compose restart nginx-mailcow
+  docker restart $(docker ps -aqf name=nginx-mailcow)
 
 elif [[ ${NC_INSTALL} == "y" ]]; then
 
@@ -53,16 +54,8 @@ elif [[ ${NC_INSTALL} == "y" ]]; then
 	fi
 
 	ADMIN_NC_PASS=$(</dev/urandom tr -dc A-Za-z0-9 | head -c 28)
-	NEXTCLOUD_VERSION=$(curl -s https://www.servercow.de/nextcloud/latest.php)
 
-	[[ -z ${NEXTCLOUD_VERSION} ]] && { echo "Error, cannot determine nextcloud version, exiting..."; exit 1; }
-
-	curl -L# -o nextcloud.tar.bz2 "https://download.nextcloud.com/server/releases/nextcloud-${NEXTCLOUD_VERSION}.tar.bz2" \
-	  && curl -L# -o nextcloud.tar.bz2.asc "https://download.nextcloud.com/server/releases/nextcloud-${NEXTCLOUD_VERSION}.tar.bz2.asc" \
-	  && export GNUPGHOME="$(mktemp -d)" \
-	  && gpg --keyserver ha.pool.sks-keyservers.net --recv-keys 28806A878AE423A28372792ED75899B9A724937A \
-	  && gpg --batch --verify nextcloud.tar.bz2.asc nextcloud.tar.bz2 \
-	  && rm -r "$GNUPGHOME" nextcloud.tar.bz2.asc \
+	curl -L# -o nextcloud.tar.bz2 "https://download.nextcloud.com/server/releases/latest-12.tar.bz2" \
 	  && tar -xjf nextcloud.tar.bz2 -C ./data/web/ \
 	  && rm nextcloud.tar.bz2 \
 	  && rm -rf ./data/web/nextcloud/updater \
@@ -102,14 +95,14 @@ elif [[ ${NC_INSTALL} == "y" ]]; then
 
 	if [[ ${NC_TYPE} == "subdomain" ]]; then
 		docker exec -it -u www-data $(docker ps -f name=php-fpm-mailcow -q) /web/nextcloud/occ config:system:set overwritewebroot --value=/
-		docker exec -it -u www-data $(docker ps -f name=php-fpm-mailcow -q) /web/nextcloud/occ config:system:set overwritehost --value=nextcloud.develcow.de
+		docker exec -it -u www-data $(docker ps -f name=php-fpm-mailcow -q) /web/nextcloud/occ config:system:set overwritehost --value=${NC_SUBD}
 		cp ./data/assets/nextcloud/nextcloud.conf ./data/conf/nginx/
 		sed -i 's/NC_SUBD/${NC_SUBD}/g' ./data/conf/nginx/nextcloud.conf
 	elif [[ ${NC_TYPE} == "subfolder" ]]; then
 		cp ./data/assets/nextcloud/site.nextcloud.custom ./data/conf/nginx/
 	fi
 
-	docker-compose restart nginx-mailcow
+  docker restart $(docker ps -aqf name=nginx-mailcow)
 
 	echo "Login as admin with password: ${ADMIN_NC_PASS}"
 

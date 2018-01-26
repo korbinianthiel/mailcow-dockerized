@@ -238,7 +238,7 @@ function mailbox($_action, $_type, $_data = null, $attr = null) {
             );
             return false;
           }
-          if (!filter_var($mins_interval, FILTER_VALIDATE_INT, array('options' => array('min_range' => 10, 'max_range' => 3600)))) {
+          if (!filter_var($mins_interval, FILTER_VALIDATE_INT, array('options' => array('min_range' => 1, 'max_range' => 3600)))) {
             $_SESSION['return'] = array(
               'type' => 'danger',
               'msg' => sprintf($lang['danger']['access_denied'])
@@ -288,7 +288,7 @@ function mailbox($_action, $_type, $_data = null, $attr = null) {
           }
           try {
             $stmt = $pdo->prepare("INSERT INTO `imapsync` (`user2`, `exclude`, `delete1`, `delete2`, `maxage`, `subfolder2`, `host1`, `authmech1`, `user1`, `password1`, `mins_interval`, `port1`, `enc1`, `delete2duplicates`, `active`)
-              VALUES (:user2, :exclude, :maxage, :delete1, :delete2, :subfolder2, :host1, :authmech1, :user1, :password1, :mins_interval, :port1, :enc1, :delete2duplicates, :active)");
+              VALUES (:user2, :exclude, :delete1, :delete2, :maxage, :subfolder2, :host1, :authmech1, :user1, :password1, :mins_interval, :port1, :enc1, :delete2duplicates, :active)");
             $stmt->execute(array(
               ':user2' => $username,
               ':exclude' => $exclude,
@@ -333,6 +333,7 @@ function mailbox($_action, $_type, $_data = null, $attr = null) {
           $aliases			= $_data['aliases'];
           $mailboxes    = $_data['mailboxes'];
           $maxquota			= $_data['maxquota'];
+          $restart_sogo = $_data['restart_sogo'];
           $quota				= $_data['quota'];
           if ($maxquota > $quota) {
             $_SESSION['return'] = array(
@@ -416,10 +417,21 @@ function mailbox($_action, $_type, $_data = null, $attr = null) {
               );
               return false;
             }
-            $_SESSION['return'] = array(
-              'type' => 'success',
-              'msg' => sprintf($lang['success']['domain_added'], htmlspecialchars($domain))
-            );
+            if (!empty($restart_sogo)) {
+              $restart_reponse = json_decode(docker('sogo-mailcow', 'post', 'restart'), true);
+              if ($restart_reponse['type'] == "success") {
+                $_SESSION['return'] = array(
+                  'type' => 'success',
+                  'msg' => sprintf($lang['success']['domain_added'], htmlspecialchars($domain))
+                );
+              }
+              else {
+                $_SESSION['return'] = array(
+                  'type' => 'warning',
+                  'msg' => 'Added domain but failed to restart SOGo, please check your server logs.'
+                );
+              }
+            }
           }
           catch (PDOException $e) {
             mailbox('delete', 'domain', array('domain' => $domain));
@@ -490,9 +502,20 @@ function mailbox($_action, $_type, $_data = null, $attr = null) {
             if (in_array($address, $gotos)) {
               continue;
             }
+            $domain       = idn_to_ascii(substr(strstr($address, '@'), 1));
+            $local_part   = strstr($address, '@', true);
+            $address      = $local_part.'@'.$domain;
             $stmt = $pdo->prepare("SELECT `address` FROM `alias`
-              WHERE `address`= :address");
-            $stmt->execute(array(':address' => $address));
+              WHERE `address`= :address OR `address` IN (
+                SELECT `username` FROM `mailbox`, `alias_domain`
+                  WHERE (
+                    `alias_domain`.`alias_domain` = :address_d
+                      AND `mailbox`.`username` = CONCAT(:address_l, '@', alias_domain.target_domain)))");
+            $stmt->execute(array(
+              ':address' => $address,
+              ':address_l' => $local_part,
+              ':address_d' => $domain
+            ));
             $num_results = count($stmt->fetchAll(PDO::FETCH_ASSOC));
             if ($num_results != 0) {
               $_SESSION['return'] = array(
@@ -501,9 +524,6 @@ function mailbox($_action, $_type, $_data = null, $attr = null) {
               );
               return false;
             }
-            $domain       = idn_to_ascii(substr(strstr($address, '@'), 1));
-            $local_part   = strstr($address, '@', true);
-            $address      = $local_part.'@'.$domain;
             $domaindata = mailbox('get', 'domain_details', $domain);
             if (is_array($domaindata) && $domaindata['aliases_left'] == "0") {
               $_SESSION['return'] = array(
@@ -689,6 +709,16 @@ function mailbox($_action, $_type, $_data = null, $attr = null) {
               );
               return false;
             }
+            try {
+              $redis->hSet('DOMAIN_MAP', $alias_domain, 1);
+            }
+            catch (RedisException $e) {
+              $_SESSION['return'] = array(
+                'type' => 'danger',
+                'msg' => 'Redis: '.$e
+              );
+              return false;
+            }
           }
           $_SESSION['return'] = array(
             'type' => 'success',
@@ -722,7 +752,7 @@ function mailbox($_action, $_type, $_data = null, $attr = null) {
           }
           $active = intval($_data['active']);
           $quota_b		= ($quota_m * 1048576);
-          $maildir		= $domain."/".$local_part."/";
+          $maildir		= $domain . "/" . $local_part . "/";
           if (!is_valid_domain_name($domain)) {
             $_SESSION['return'] = array(
               'type' => 'danger',
@@ -1278,6 +1308,20 @@ function mailbox($_action, $_type, $_data = null, $attr = null) {
             if (isset($_data['tagged_mail_handler']) && $_data['tagged_mail_handler'] == "subject") {
               try {
                 $redis->hSet('RCPT_WANTS_SUBJECT_TAG', $username, 1);
+                $redis->hDel('RCPT_WANTS_SUBFOLDER_TAG', $username);
+              }
+              catch (RedisException $e) {
+                $_SESSION['return'] = array(
+                  'type' => 'danger',
+                  'msg' => 'Redis: '.$e
+                );
+                return false;
+              }
+            }
+            else if (isset($_data['tagged_mail_handler']) && $_data['tagged_mail_handler'] == "subfolder") {
+              try {
+                $redis->hSet('RCPT_WANTS_SUBFOLDER_TAG', $username, 1);
+                $redis->hDel('RCPT_WANTS_SUBJECT_TAG', $username);
               }
               catch (RedisException $e) {
                 $_SESSION['return'] = array(
@@ -1290,6 +1334,7 @@ function mailbox($_action, $_type, $_data = null, $attr = null) {
             else {
               try {
                 $redis->hDel('RCPT_WANTS_SUBJECT_TAG', $username);
+                $redis->hDel('RCPT_WANTS_SUBFOLDER_TAG', $username);
               }
               catch (RedisException $e) {
                 $_SESSION['return'] = array(
@@ -1405,7 +1450,7 @@ function mailbox($_action, $_type, $_data = null, $attr = null) {
               $subfolder2 = (isset($_data['subfolder2'])) ? $_data['subfolder2'] : $is_now['subfolder2'];
               $enc1 = (!empty($_data['enc1'])) ? $_data['enc1'] : $is_now['enc1'];
               $mins_interval = (!empty($_data['mins_interval'])) ? $_data['mins_interval'] : $is_now['mins_interval'];
-              $exclude = (!empty($_data['exclude'])) ? $_data['exclude'] : '';
+              $exclude = (!empty($_data['exclude'])) ? $_data['exclude'] : $is_now['exclude'];
               $maxage = (isset($_data['maxage']) && $_data['maxage'] != "") ? intval($_data['maxage']) : $is_now['maxage'];
             }
             else {
@@ -1428,7 +1473,7 @@ function mailbox($_action, $_type, $_data = null, $attr = null) {
               );
               return false;
             }
-            if (!filter_var($mins_interval, FILTER_VALIDATE_INT, array('options' => array('min_range' => 10, 'max_range' => 3600)))) {
+            if (!filter_var($mins_interval, FILTER_VALIDATE_INT, array('options' => array('min_range' => 1, 'max_range' => 3600)))) {
               $_SESSION['return'] = array(
                 'type' => 'danger',
                 'msg' => sprintf($lang['danger']['access_denied'])
@@ -2302,7 +2347,7 @@ function mailbox($_action, $_type, $_data = null, $attr = null) {
           }
           else {
             try {
-              $stmt = $pdo->prepare("SELECT `username` FROM `mailbox` WHERE `kind` NOT REGEXP 'location|thing|group' AND `domain` IN (SELECT `domain` FROM `domain_admins` WHERE `active` = '1' AND `username` = :username) OR 'admin' = :role");
+              $stmt = $pdo->prepare("SELECT `username` FROM `mailbox` WHERE `kind` NOT REGEXP 'location|thing|group' AND (`domain` IN (SELECT `domain` FROM `domain_admins` WHERE `active` = '1' AND `username` = :username) OR 'admin' = :role)");
               $stmt->execute(array(
                 ':username' => $_SESSION['mailcow_cc_username'],
                 ':role' => $_SESSION['mailcow_cc_role'],
@@ -2602,8 +2647,11 @@ function mailbox($_action, $_type, $_data = null, $attr = null) {
             if ($redis->hGet('RCPT_WANTS_SUBJECT_TAG', $_data)) {
               return "subject";
             }
-            else {
+            elseif ($redis->hGet('RCPT_WANTS_SUBFOLDER_TAG', $_data)) {
               return "subfolder";
+            }
+            else {
+              return "none";
             }
           }
           catch (RedisException $e) {
@@ -3103,10 +3151,6 @@ function mailbox($_action, $_type, $_data = null, $attr = null) {
           }
           foreach ($ids as $id) {
             if (!is_numeric($id)) {
-              $_SESSION['return'] = array(
-                'type' => 'danger',
-                'msg' => $id
-              );
               return false;
             }
             try {
@@ -3154,10 +3198,6 @@ function mailbox($_action, $_type, $_data = null, $attr = null) {
           }
           foreach ($ids as $id) {
             if (!is_numeric($id)) {
-              $_SESSION['return'] = array(
-                'type' => 'danger',
-                'msg' => $id
-              );
               return false;
             }
             try {
@@ -3366,6 +3406,10 @@ function mailbox($_action, $_type, $_data = null, $attr = null) {
               $stmt->execute(array(
                 ':domain' => '%@'.$domain,
               ));
+              $stmt = $pdo->prepare("DELETE FROM `bcc_maps` WHERE `local_dest` = :domain");
+              $stmt->execute(array(
+                ':domain' => $domain,
+              ));
             }
             catch (PDOException $e) {
               $_SESSION['return'] = array(
@@ -3486,11 +3530,25 @@ function mailbox($_action, $_type, $_data = null, $attr = null) {
               $stmt->execute(array(
                 ':alias_domain' => $alias_domain,
               ));
+              $stmt = $pdo->prepare("DELETE FROM `bcc_maps` WHERE `local_dest` = :alias_domain");
+              $stmt->execute(array(
+                ':alias_domain' => $alias_domain,
+              ));
             }
             catch (PDOException $e) {
               $_SESSION['return'] = array(
                 'type' => 'danger',
                 'msg' => 'MySQL: '.$e
+              );
+              return false;
+            }
+            try {
+              $redis->hDel('DOMAIN_MAP', $alias_domain);
+            }
+            catch (RedisException $e) {
+              $_SESSION['return'] = array(
+                'type' => 'danger',
+                'msg' => 'Redis: '.$e
               );
               return false;
             }
@@ -3577,6 +3635,10 @@ function mailbox($_action, $_type, $_data = null, $attr = null) {
                 ':username' => $username
               ));
               $stmt = $pdo->prepare("DELETE FROM `sogo_folder_info` WHERE `c_path2` = :username");
+              $stmt->execute(array(
+                ':username' => $username
+              ));
+              $stmt = $pdo->prepare("DELETE FROM `bcc_maps` WHERE `local_dest` = :username");
               $stmt->execute(array(
                 ':username' => $username
               ));
