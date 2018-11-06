@@ -3,6 +3,8 @@
 #exit on error and pipefail
 set -o pipefail
 
+umask 0022
+
 for bin in curl docker-compose docker git awk sha1sum; do
   if [[ -z $(which ${bin}) ]]; then echo "Cannot find ${bin}, exiting..."; exit 1; fi
 done
@@ -114,7 +116,6 @@ CONFIG_ARRAY=(
   "LOG_LINES"
   "SNAT_TO_SOURCE"
   "SNAT6_TO_SOURCE"
-  "SYSCTL_IPV6_DISABLED"
   "COMPOSE_PROJECT_NAME"
   "SQL_PORT"
   "API_KEY"
@@ -128,15 +129,6 @@ for option in ${CONFIG_ARRAY[@]}; do
     if ! grep -q ${option} mailcow.conf; then
       echo "Adding new option \"${option}\" to mailcow.conf"
       echo "${option}=" >> mailcow.conf
-    fi
-  elif [[ ${option} == "SYSCTL_IPV6_DISABLED" ]]; then
-    if ! grep -q ${option} mailcow.conf; then
-      echo "Adding new option \"${option}\" to mailcow.conf"
-      echo "# Disable IPv6" >> mailcow.conf
-      echo "# mailcow-network will still be created as IPv6 enabled, all containers will be created" >> mailcow.conf
-      echo "# without IPv6 support." >> mailcow.conf
-      echo "# Use 1 for disabled, 0 for enabled" >> mailcow.conf
-      echo "SYSCTL_IPV6_DISABLED=0" >> mailcow.conf
     fi
   elif [[ ${option} == "COMPOSE_PROJECT_NAME" ]]; then
     if ! grep -q ${option} mailcow.conf; then
@@ -254,9 +246,6 @@ sleep 2
 docker-compose down
 
 # Fix header check
-if [[ -f data/conf/postfix/mailcow_anonymize_headers.pcre ]]; then
-  mv data/conf/postfix/mailcow_anonymize_headers.pcre data/conf/postfix/mailcow_anonymize_headers.pcre_
-fi
 # Silently fixing remote url from andryyy to mailcow
 git remote set-url origin https://github.com/mailcow/mailcow-dockerized
 echo -e "\e[32mCommitting current status...\e[0m"
@@ -285,10 +274,6 @@ elif [[ ${MERGE_RETURN} != 0 ]]; then
   echo
   echo "Run docker-compose up -d to restart your stack without updates or try again after fixing the mentioned errors."
   exit 1
-fi
-# Make sure missing files do exist, checkout missing files if any
-if [[ ! -f data/conf/postfix/mailcow_anonymize_headers.pcre ]]; then
-  git checkout origin/${BRANCH} data/conf/postfix/mailcow_anonymize_headers.pcre
 fi
 
 echo -e "\e[32mFetching new docker-compose version...\e[0m"
