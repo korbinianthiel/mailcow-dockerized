@@ -6,17 +6,9 @@ if [[ "${SKIP_CLAMD}" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
   exit 0
 fi
 
-# Prepare log pipes
-mkdir -p /var/log/clamav
-touch /var/log/clamav/clamd.log /var/log/clamav/freshclam.log
-chown -R clamav:clamav /var/log/clamav/
-chown root:tty /dev/console
-chmod g+rw /dev/console
-
 # Prepare whitelist
 if [[ -s /etc/clamav/whitelist.ign2 ]]; then
   cp /etc/clamav/whitelist.ign2 /var/lib/clamav/whitelist.ign2
-  chown clamav:clamav /var/lib/clamav/whitelist.ign2
 fi
 if [[ ! -f /var/lib/clamav/whitelist.ign2 ]]; then
   echo "Example-Signature.Ignore-1" > /var/lib/clamav/whitelist.ign2
@@ -37,7 +29,28 @@ done
 ) &
 BACKGROUND_TASKS+=($!)
 
-clamd &
+(
+while true; do
+  sleep 2m
+  SANE_MIRRORS="$(dig +ignore +short rsync.sanesecurity.net)"
+  for sane_mirror in ${SANE_MIRRORS}; do
+    rsync -avp --chown=clamav:clamav --timeout=5 rsync://${sane_mirror}/sanesecurity/ \
+      --include 'blurl.ndb' \
+      --include 'junk.ndb' \
+      --include 'jurlbl.ndb' \
+      --include 'phish.ndb' \
+      --exclude='*' /var/lib/clamav/
+    if [ $? -eq 0 ]; then
+      echo RELOAD | nc localhost 3310
+      break
+    fi
+  done
+  sleep 30h
+done
+) &
+BACKGROUND_TASKS+=($!)
+
+nice -n10 clamd &
 BACKGROUND_TASKS+=($!)
 
 while true; do
