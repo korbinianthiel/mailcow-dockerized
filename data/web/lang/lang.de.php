@@ -264,8 +264,8 @@ $lang['mailbox']['tls_policy_maps'] = 'TLS-Richtlinien';
 $lang['mailbox']['tls_policy_maps_long'] = 'Ausgehende TLS-Richtlinien';
 $lang['mailbox']['tls_policy_maps_info'] = 'Nachstehende Richtlinien erzwingen TLS-Transportregeln unabhängig von TLS-Richtlinieneinstellungen eines Benutzers.<br>
   Für weitere Informationen zur Syntax sollte <a href="http://www.postfix.org/postconf.5.html#smtp_tls_policy_maps" target="_blank">die "smtp_tls_policy_maps" Dokumentation</a> konsultiert werden.';
-$lang['mailbox']['tls_enforce_in'] = 'Enforce TLS incoming';
-$lang['mailbox']['tls_enforce_out'] = 'Enforce TLS outgoing';
+$lang['mailbox']['tls_enforce_in'] = 'TLS eingehend erzwingen';
+$lang['mailbox']['tls_enforce_out'] = 'TLS ausgehend erzwingen';
 $lang['mailbox']['tls_map_dest'] = 'Ziel';
 $lang['mailbox']['tls_map_dest_info'] = 'Beispiele: example.org, .example.org, mail@example.org, [mail.example.org]:25';
 $lang['mailbox']['tls_map_policy'] = 'Richtlinie';
@@ -287,6 +287,7 @@ $lang['mailbox']['description'] = 'Beschreibung';
 $lang['mailbox']['resources'] = 'Ressourcen';
 $lang['mailbox']['domains'] = 'Domains';
 $lang['admin']['domain_s'] = 'Domain(s)';
+$lang['mailbox']['mailbox'] = 'Mailbox';
 $lang['mailbox']['mailboxes'] = 'Mailboxen';
 $lang['mailbox']['mailbox_quota'] = 'Max. Größe einer Mailbox';
 $lang['mailbox']['domain_quota'] = 'Gesamtspeicher';
@@ -378,6 +379,14 @@ $lang['edit']['dont_check_sender_acl'] = 'Absender für Domain %s u. Alias-Dom. 
 $lang['edit']['multiple_bookings'] = 'Mehrfaches Buchen';
 $lang['edit']['kind'] = 'Art';
 $lang['edit']['resource'] = 'Ressource';
+$lang['edit']['public_comment'] = 'Öffentlicher Kommentar';
+$lang['mailbox']['public_comment'] = 'Öffentlicher Kommentar';
+$lang['edit']['private_comment'] = 'Privater Kommentar';
+$lang['mailbox']['private_comment'] = 'Privater Kommentar';
+$lang['edit']['comment_info'] = 'Ein privater Kommentar ist für den Benutzer nicht einsehbar. Ein öffentlicher Kommentar wird als Tooltip im Interface des Benutzers angezeigt.';
+$lang['add']['public_comment'] = 'Öffentlicher Kommentar';
+$lang['add']['private_comment'] = 'Privater Kommentar';
+$lang['add']['comment_info'] = 'Ein privater Kommentar ist für den Benutzer nicht einsehbar. Ein öffentlicher Kommentar wird als Tooltip im Interface des Benutzers angezeigt.';
 
 $lang['acl']['spam_alias'] = 'Temporäre E-Mail Aliasse';
 $lang['acl']['tls_policy'] = 'Verschlüsselungsrichtlinie';
@@ -387,7 +396,9 @@ $lang['acl']['delimiter_action'] = 'Delimiter Aktionen (tags)';
 $lang['acl']['syncjobs'] = 'Sync Jobs';
 $lang['acl']['eas_reset'] = 'EAS-Cache zurücksetzen';
 $lang['acl']['sogo_profile_reset'] = 'SOGo Profil zurücksetzen';
-$lang['acl']['quarantine'] = 'Quarantäne';
+$lang['acl']['quarantine'] = 'Quarantäne-Aktionen';
+$lang['acl']['quarantine_notification'] = 'Quarantäne-Benachrichtigung';
+$lang['acl']['quarantine_attachments'] = 'Anhänge aus Quarantäne';
 $lang['acl']['alias_domains'] = 'Alias-Domains hinzufügen';
 $lang['acl']['login_as'] = 'Einloggen als Mailbox-Benutzer';
 $lang['acl']['bcc_maps'] = 'BCC Maps';
@@ -395,6 +406,18 @@ $lang['acl']['filters'] = 'Filter';
 $lang['acl']['ratelimit'] = 'Rate limit';
 $lang['acl']['recipient_maps'] = 'Empfängerumschreibungen';
 $lang['acl']['prohibited'] = 'Untersagt durch Richtlinie';
+
+$lang['mailbox']['quarantine_notification'] = 'Quarantäne-Benachrichtigung';
+$lang['mailbox']['never'] = 'Niemals';
+$lang['mailbox']['hourly'] = 'Stündlich';
+$lang['mailbox']['daily'] = 'Täglich';
+$lang['mailbox']['weekly'] = 'Wöchentlich';
+$lang['user']['quarantine_notification'] = 'Quarantäne-Benachrichtigung';
+$lang['user']['never'] = 'Niemals';
+$lang['user']['hourly'] = 'Stündlich';
+$lang['user']['daily'] = 'Täglich';
+$lang['user']['weekly'] = 'Wöchentlich';
+$lang['user']['quarantine_notification_info'] = 'Wurde über eine E-Mail in Quarantäne informiert, wird sie als "benachrichtigt" markiert und keine weitere Benachrichtigung zu dieser E-Mail versendet.';
 
 $lang['add']['generate'] = 'generieren';
 $lang['add']['syncjob'] = 'Syncjob hinzufügen';
@@ -615,10 +638,24 @@ $lang['admin']['unban_pending'] = "ausstehend";
 $lang['admin']['queue_unban'] = "Unban einreihen";
 $lang['admin']['no_active_bans'] = "Keine aktiven Bans";
 
+$lang['admin']['quota_notifications'] = "Quota Benachrichtigungen";
+$lang['admin']['quota_notifications_vars'] = "{{percent}} entspricht der aktuellen Quota in Prozent<br>{{username}} entspricht dem Mailbox-Namen";
+$lang['admin']['rspamd_settings_map'] = "Rspamd Settings Map";
 $lang['admin']['quarantine'] = "Quarantäne";
-$lang['admin']['quarantine_retention_size'] = "Rückhaltungen pro Mailbox<br />0 bedeutet <b>inaktiv</b>!";
-$lang['admin']['quarantine_max_size'] = "Maximale Größe in MiB (größere Elemente werden verworfen)<br />0 bedeutet <b>nicht</b> unlimitert!";
-$lang['admin']['quarantine_exclude_domains'] = "Domains und Alias-Domains ausschließen:";
+$lang['admin']['active_rspamd_settings_map'] = "Derzeit aktive Settings Map";
+$lang['admin']['quota_notifications_info'] = "Quota Benachrichtigungen werden an Mailboxen versendet, die 80 respektive 95 Prozent der zur Verfügung stehenden Quota überschreiten.";
+$lang['admin']['quarantine_retention_size'] = "Rückhaltungen pro Mailbox:<br><small>0 bedeutet <b>inaktiv</b>.</small>";
+$lang['admin']['quarantine_max_size'] = "Maximale Größe in MiB (größere Elemente werden verworfen):<br><small>0 bedeutet <b>nicht</b> unlimitert.</small>";
+$lang['admin']['quarantine_exclude_domains'] = "Domains und Alias-Domains ausschließen";
+$lang['admin']['quarantine_notification_sender'] = "Benachrichtigungs-E-Mail Absender";
+$lang['admin']['quota_notification_sender'] = "Benachrichtigungs-E-Mail Absender";
+$lang['admin']['quarantine_notification_subject'] = "Benachrichtigungs-E-Mail Betreff";
+$lang['admin']['quota_notification_subject'] = "Benachrichtigungs-E-Mail Betreff";
+$lang['admin']['quarantine_notification_html'] = "Benachrichtigungs-E-Mail Inhalt:<br><small>Leer lassen, um Standard-Template wiederherzustellen.</small>";
+$lang['admin']['quota_notification_html'] = "Benachrichtigungs-E-Mail Inhalt:<br><small>Leer lassen, um Standard-Template wiederherzustellen.</small>";
+$lang['admin']['quarantine_release_format'] = "Format freigegebener Mails";
+$lang['admin']['quarantine_release_format_raw'] = "Unverändertes Original";
+$lang['admin']['quarantine_release_format_att'] = "Als Anhang";
 
 $lang['success']['forwarding_host_removed'] = "Weiterleitungs-Host %s wurde entfernt";
 $lang['success']['forwarding_host_added'] = "Weiterleitungs-Host %s wurde hinzugefügt";
@@ -637,6 +674,8 @@ $lang['admin']['relay_run'] = "Test durchführen";
 $lang['mailbox']['waiting'] = "Wartend";
 $lang['mailbox']['status'] = "Status";
 $lang['mailbox']['running'] = "In Ausführung";
+$lang['mailbox']['enable_x'] = "Aktiviere";
+$lang['mailbox']['disable_x'] = "Deaktiviere";
 
 $lang['admin']['ui_texts'] = "UI Label und Texte";
 $lang['admin']['help_text'] = "Hilfstext unter Login-Maske (HTML zulässig)";
@@ -662,6 +701,7 @@ $lang['edit']['spam_policy'] = "Hinzufügen und Entfernen von Einträgen in Whit
 $lang['edit']['spam_alias'] = "Anpassen temporärer Alias-Adressen";
 
 $lang['danger']['img_tmp_missing'] = "Grafik konnte nicht validiert werden: Erstellung temporärer Datei fehlgeschlagen";
+$lang['danger']['comment_too_long'] = "Kommentarfeld darf maximal 160 Zeichen enthalten";
 $lang['danger']['img_invalid'] = "Grafik konnte nicht validiert werden";
 $lang['danger']['invalid_mime_type'] = "Grafik konnte nicht validiert werden: Ungültiger MIME-Type";
 $lang['success']['upload_success'] = "Datei wurde erfolgreich hochgeladen";
@@ -692,6 +732,12 @@ $lang['quarantine']['subj'] = "Betreff";
 $lang['quarantine']['text_plain_content'] = "Inhalt (text/plain)";
 $lang['quarantine']['text_from_html_content'] = "Inhalt (html, konvertiert)";
 $lang['quarantine']['atts'] = "Anhänge";
+$lang['quarantine']['low_danger'] = "Niedrige Gefahr";
+$lang['quarantine']['neutral_danger'] = "Neutral/ohne Bewertung";
+$lang['quarantine']['medium_danger'] = "Mittlere Gefahr";
+$lang['quarantine']['high_danger'] = "Hohe Gefahr";
+$lang['quarantine']['danger'] = "Gefahr";
+$lang['quarantine']['qhandler_success'] = "Aktion wurde an das System übergeben. Sie dürfen dieses Fenster nun schließen.";
 $lang['warning']['fuzzy_learn_error'] = "Fuzzy Lernfehler: %s";
 $lang['danger']['spam_learn_error'] = "Spam Lernfehler: %s";
 $lang['success']['qlearn_spam'] = "Nachricht ID %s wurde als Spam gelernt und gelöscht";
@@ -700,7 +746,7 @@ $lang['debug']['log_info'] = '<p>mailcow <b>in-memory Logs</b> werden in Redis L
   <br>In-memory Logs sind vergänglich und nicht zur ständigen Aufbewahrung bestimmt. Alle Anwendungen, die in-memory protokollieren, schreiben ebenso in den Docker Daemon.
   <br>Das in-memory Protokoll versteht sich als schnelle Übersicht zum Debugging eines Containers, für komplexere Protokolle sollte der Docker Daemon konsultiert werden.</p>
   <p><b>Externe Logs</b> werden via API externer Applikationen bezogen.</p>
-  <p><b>Statische Logs</b> sind weitestgehend Aktivitätsprotokolle, die nicht in den Docker Daemon geschrieben werden, jedoch permanent verfügbar sein müssen (ausgeschloßen API Logs).</p>';
+  <p><b>Statische Logs</b> sind weitesgehend Aktivitätsprotokolle, die nicht in den Docker Daemon geschrieben werden, jedoch permanent verfügbar sein müssen (ausgeschloßen API Logs).</p>';
 
 $lang['debug']['in_memory_logs'] = 'In-memory Logs';
 $lang['debug']['external_logs'] = 'Externe Logs';
@@ -778,3 +824,4 @@ $lang['warning']['ip_invalid'] = 'Ungültige IP übersprungen: %s';
 $lang['danger']['text_empty'] = 'Text darf nicht leer sein';
 $lang['danger']['subject_empty'] = 'Betreff darf nicht leer sein';
 $lang['danger']['from_invalid'] = 'From address must be a valid email address';
+$lang['danger']['network_host_invalid'] = 'Netzwerk oder Host ungültig: %s';
