@@ -2,7 +2,7 @@ version: '2.1'
 services:
 
     unbound-mailcow:
-      image: mailcow/unbound:1.6
+      image: mailcow/unbound:1.7
       build: ./data/Dockerfiles/unbound
       command: /usr/sbin/unbound
       environment:
@@ -71,18 +71,22 @@ services:
             - clamd
 
     rspamd-mailcow:
-      image: mailcow/rspamd:1.39
+      image: mailcow/rspamd:1.42
       build: ./data/Dockerfiles/rspamd
       stop_grace_period: 30s
       depends_on:
         - nginx-mailcow
+        - dovecot-mailcow
       environment:
         - TZ=${TZ}
       volumes:
         - ./data/conf/rspamd/custom/:/etc/rspamd/custom
         - ./data/conf/rspamd/override.d/:/etc/rspamd/override.d
         - ./data/conf/rspamd/local.d/:/etc/rspamd/local.d
+        - ./data/conf/rspamd/plugins.d/:/etc/rspamd/plugins.d
         - ./data/conf/rspamd/lua/:/etc/rspamd/lua/:ro
+        - ./data/conf/rspamd/rspamd.conf.local:/etc/rspamd/rspamd.conf.local
+        - ./data/conf/rspamd/rspamd.conf.override:/etc/rspamd/rspamd.conf.override
         - rspamd-vol-1:/var/lib/rspamd
       restart: always
       dns:
@@ -94,7 +98,7 @@ services:
             - rspamd
 
     php-fpm-mailcow:
-      image: mailcow/phpfpm:1.36
+      image: mailcow/phpfpm:1.37
       build: ./data/Dockerfiles/phpfpm
       command: "php-fpm -d date.timezone=${TZ} -d expose_php=0"
       depends_on:
@@ -169,7 +173,7 @@ services:
             - sogo
 
     dovecot-mailcow:
-      image: mailcow/dovecot:1.68
+      image: mailcow/dovecot:1.75
       build: ./data/Dockerfiles/dovecot
       cap_add:
         - NET_BIND_SERVICE
@@ -315,7 +319,7 @@ services:
     acme-mailcow:
       depends_on:
         - nginx-mailcow
-      image: mailcow/acme:1.53
+      image: mailcow/acme:1.56
       build: ./data/Dockerfiles/acme
       dns:
         - ${IPV4_NETWORK:-172.22.1}.254
@@ -344,7 +348,7 @@ services:
             - acme
 
     netfilter-mailcow:
-      image: mailcow/netfilter:1.23
+      image: mailcow/netfilter:1.25
       build: ./data/Dockerfiles/netfilter
       stop_grace_period: 30s
       depends_on:
@@ -368,7 +372,7 @@ services:
         - /lib/modules:/lib/modules:ro
 
     watchdog-mailcow:
-      image: mailcow/watchdog:1.41
+      image: mailcow/watchdog:1.42
       # Debug
       #command: /watchdog.sh
       build: ./data/Dockerfiles/watchdog
@@ -400,7 +404,7 @@ services:
             - watchdog
 
     dockerapi-mailcow:
-      image: mailcow/dockerapi:1.26
+      image: mailcow/dockerapi:1.30
       restart: always
       build: ./data/Dockerfiles/dockerapi
       oom_kill_disable: true
