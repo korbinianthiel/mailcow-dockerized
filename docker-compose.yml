@@ -55,7 +55,7 @@ services:
             - redis
 
     clamd-mailcow:
-      image: mailcow/clamd:1.26
+      image: mailcow/clamd:1.27
       build: ./data/Dockerfiles/clamd
       restart: always
       environment:
@@ -145,7 +145,7 @@ services:
             - phpfpm
 
     sogo-mailcow:
-      image: mailcow/sogo:1.57
+      image: mailcow/sogo:1.58
       build: ./data/Dockerfiles/sogo
       environment:
         - DBNAME=${DBNAME}
@@ -174,7 +174,7 @@ services:
             - sogo
 
     dovecot-mailcow:
-      image: mailcow/dovecot:1.84
+      image: mailcow/dovecot:1.85
       build: ./data/Dockerfiles/dovecot
       cap_add:
         - NET_BIND_SERVICE
@@ -196,6 +196,7 @@ services:
         - DBUSER=${DBUSER}
         - DBPASS=${DBPASS}
         - TZ=${TZ}
+        - MAILCOW_HOSTNAME=${MAILCOW_HOSTNAME}
         - IPV4_NETWORK=${IPV4_NETWORK:-172.22.1}
         - ALLOW_ADMIN_EMAIL_LOGIN=${ALLOW_ADMIN_EMAIL_LOGIN:-n}
         - MAILDIR_GC_TIME=${MAILDIR_GC_TIME:-1440}
@@ -229,7 +230,7 @@ services:
             - dovecot
 
     postfix-mailcow:
-      image: mailcow/postfix:1.35
+      image: mailcow/postfix:1.37
       build: ./data/Dockerfiles/postfix
       volumes:
         - ./data/conf/postfix:/opt/postfix/conf
@@ -320,7 +321,7 @@ services:
     acme-mailcow:
       depends_on:
         - nginx-mailcow
-      image: mailcow/acme:1.60
+      image: mailcow/acme:1.61
       build: ./data/Dockerfiles/acme
       dns:
         - ${IPV4_NETWORK:-172.22.1}.254
@@ -373,7 +374,7 @@ services:
         - /lib/modules:/lib/modules:ro
 
     watchdog-mailcow:
-      image: mailcow/watchdog:1.53
+      image: mailcow/watchdog:1.56
       # Debug
       #command: /watchdog.sh
       build: ./data/Dockerfiles/watchdog
