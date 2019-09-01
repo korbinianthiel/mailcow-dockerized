@@ -19,7 +19,7 @@ $lang['footer']['cancel'] = 'Abbrechen';
 $lang['footer']['hibp_nok'] = 'Übereinstimmung gefunden! Dieses Passwort ist potentiell gefährlich!';
 $lang['footer']['hibp_ok'] = 'Keine Übereinstimmung gefunden.';
 
-$lang['danger']['transport_dest_exists'] = "Transport Maps Ziel existiert bereits";
+$lang['danger']['transport_dest_exists'] = 'Transport Maps Ziel "%s" existiert bereits';
 $lang['danger']['unlimited_quota_acl'] = "Unendliche Quota untersagt durch ACL";
 $lang['danger']['mysql_error'] = "MySQL Fehler: %s";
 $lang['danger']['redis_error'] = "Redis Fehler: %s";
@@ -31,7 +31,7 @@ $lang['success']['verified_u2f_login'] = "U2F Anmeldung verifiziert";
 $lang['success']['verified_yotp_login'] = "Yubico OTP Anmeldung verifiziert";
 $lang['danger']['yotp_verification_failed'] = "Yubico OTP Verifizierung fehlgeschlagen: %s";
 $lang['danger']['ip_list_empty'] = "Liste erlaubter IPs darf nicht leer sein";
-$lang['danger']['invalid_destination'] = "Ziel-Format ist ungültig";
+$lang['danger']['invalid_destination'] = 'Ziel-Format "%s" ist ungültig';
 $lang['danger']['invalid_nexthop'] = "Next Hop ist ungültig";
 $lang['danger']['invalid_nexthop_authenticated'] = 'Dieser Next Hop existiert bereits mit abweichenden Authentifizierungsdaten. Die bestehenden Authentifizierungsdaten dieses "Next Hops" müssen vorab angepasst werden.';
 $lang['danger']['next_hop_interferes'] = "%s verhindert das Hinzufügen von Next Hop %s";
@@ -614,7 +614,7 @@ $lang['admin']['forwarding_hosts_hint'] = 'Eingehende Nachrichten werden von den
 $lang['admin']['forwarding_hosts_add_hint'] = 'Sie können entweder IPv4/IPv6-Adressen, Netzwerke in CIDR-Notation, Hostnamen (die zu IP-Adressen aufgelöst werden), oder Domainnamen (die zu IP-Adressen aufgelöst werden, indem ihr SPF-Record abgefragt wird oder, in dessen Abwesenheit, ihre MX-Records) angeben.';
 $lang['admin']['relayhosts_hint'] = 'Erstellen Sie senderabhängige Transporte, um diese im Einstellungsdialog einer Domain auszuwählen.<br>
   Der Transporttyp lautet immer "smtp:". Benutzereinstellungen bezüglich Verschlüsselungsrichtlinie werden beim Transport berücksichtigt.';
-$lang['admin']['transports_hint'] = '→ Transport Maps <b>überwiegen</b> senderabhängige Transport Maps.
+$lang['admin']['transports_hint'] = '→ Transport Maps <b>überwiegen</b> senderabhängige Transport Maps.<br>
 → Transport Maps ignorieren Mailbox-Einstellungen für ausgehende Verschlüsselung. Eine serverweite TLS-Richtlinie wird jedoch angewendet.<br>
 → Der Transport erfolgt immer via "smtp:".<br>
 → Adressen, die mit "/localhost$/" übereinstimmen, werden immer via "local:" transportiert, daher sind sie von einer Zieldefinition "*" ausgeschlossen.<br>
@@ -852,3 +852,10 @@ $lang['admin']['validate_license_now'] = 'GUID erneut verifizieren';
 $lang['admin']['customer_id'] = 'Kunde';
 $lang['admin']['service_id'] = 'Service';
 
+$lang['admin']['lookup_mx'] = 'Ziel gegen MX prüfen (etwa .outlook.com, um alle Ziele mit MX *.outlook.com zu routen)';
+$lang['edit']['mbox_rl_info'] = 'Dieses Limit wird auf den SASL Loginnamen angewendet und betrifft daher alle Absenderadressen, die der eingeloggte Benutzer verwendet. Eub Mailbox Ratelimit überwiegt ein Domain-weites Ratelimit.';
+
+$lang['add']['relayhost_wrapped_tls_info'] = 'Bitte <b>keine</b> TLS-wrapped Ports verwenden (etwa SMTPS via Port 465/tcp).<br>
+Der Transport wird stattdessen STARTTLS anfordern, um TLS zu verwenden. TLS kann unter "TLS Policy Maps" erzwungen werden.';
+
+$lang['admin']['transport_dest_format'] = 'Syntax: example.org, .example.org, *, box@example.org (mehrere Werte getrennt durch Komma einzugeben)';
