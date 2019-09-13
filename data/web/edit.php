@@ -506,6 +506,7 @@ if (isset($_SESSION['mailcow_cc_role'])) {
       $mailbox = html_entity_decode(rawurldecode($_GET["mailbox"]));
       $result = mailbox('get', 'mailbox_details', $mailbox);
       $rl = ratelimit('get', 'mailbox', $mailbox);
+      $quarantine_notification = mailbox('get', 'quarantine_notification', $mailbox);
       if (!empty($result)) {
         ?>
         <h4><?=$lang['edit']['mailbox'];?></h4>
@@ -578,9 +579,51 @@ if (isset($_SESSION['mailcow_cc_role'])) {
                 <?php
               endforeach;
 
+              // Generated here, but used in extended_sender_acl
+              if (!empty($sender_acl_handles['external_sender_aliases'])) {
+                $ext_sender_acl = implode(', ', $sender_acl_handles['external_sender_aliases']);
+              }
+              else {
+                $ext_sender_acl = '';
+              }
+
               ?>
               </select>
               <div style="display:none" id="sender_acl_disabled"><?=$lang['edit']['sender_acl_disabled'];?></div>
+              <small class="help-block"><?=$lang['edit']['sender_acl_info'];?></small>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="control-label col-sm-2" for="sender_acl"><?=$lang['user']['quarantine_notification'];?></label>
+            <div class="col-sm-10">
+            <div class="btn-group" data-acl="<?=$_SESSION['acl']['quarantine_notification'];?>">
+              <button type="button" class="btn btn-sm btn-default <?=($quarantine_notification == "never") ? "active" : null;?>"
+                data-action="edit_selected"
+                data-item="<?= htmlentities($mailbox); ?>"
+                data-id="quarantine_notification"
+                data-api-url='edit/quarantine_notification'
+                data-api-attr='{"quarantine_notification":"never"}'><?=$lang['user']['never'];?></button>
+              <button type="button" class="btn btn-sm btn-default <?=($quarantine_notification == "hourly") ? "active" : null;?>"
+                data-action="edit_selected"
+                data-item="<?= htmlentities($mailbox); ?>"
+                data-id="quarantine_notification"
+                data-api-url='edit/quarantine_notification'
+                data-api-attr='{"quarantine_notification":"hourly"}'><?=$lang['user']['hourly'];?></button>
+              <button type="button" class="btn btn-sm btn-default <?=($quarantine_notification == "daily") ? "active" : null;?>"
+                data-action="edit_selected"
+                data-item="<?= htmlentities($mailbox); ?>"
+                data-id="quarantine_notification"
+                data-api-url='edit/quarantine_notification'
+                data-api-attr='{"quarantine_notification":"daily"}'><?=$lang['user']['daily'];?></button>
+              <button type="button" class="btn btn-sm btn-default <?=($quarantine_notification == "weekly") ? "active" : null;?>"
+                data-action="edit_selected"
+                data-item="<?= htmlentities($mailbox); ?>"
+                data-id="quarantine_notification"
+                data-api-url='edit/quarantine_notification'
+                data-api-attr='{"quarantine_notification":"weekly"}'><?=$lang['user']['weekly'];?></button>
+            </div>
+            <div style="display:none" id="user_acl_q_notify_disabled"><?=$lang['edit']['user_acl_q_notify_disabled'];?></div>
+            <p class="help-block"><small><?=$lang['user']['quarantine_notification_info'];?></small></p>
             </div>
           </div>
           <div class="form-group">
@@ -593,6 +636,13 @@ if (isset($_SESSION['mailcow_cc_role'])) {
             <label class="control-label col-sm-2" for="password2"><?=$lang['edit']['password_repeat'];?></label>
             <div class="col-sm-10">
             <input type="password" class="form-control" name="password2">
+            </div>
+          </div>
+          <div data-acl="<?=$_SESSION['acl']['extend_sender_acl'];?>" class="form-group">
+            <label class="control-label col-sm-2" for="extended_sender_acl"><?=$lang['edit']['extended_sender_acl'];?></label>
+            <div class="col-sm-10">
+            <input type="text" class="form-control" name="extended_sender_acl" value="<?=empty($ext_sender_acl) ? '' : $ext_sender_acl; ?>" placeholder="user1@example.com, user2@example.org, @example.com, ...">
+            <small class="help-block"><?=$lang['edit']['extended_sender_acl_info'];?></small>
             </div>
           </div>
           <div class="form-group">

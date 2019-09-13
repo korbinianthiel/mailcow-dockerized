@@ -1,11 +1,9 @@
 /.+\.accountant$/i
-/.+\.ar$/i
 /.+\.art$/i
 /.+\.asia$/i
 /.+\.bid$/i
 /.+\.biz$/i
 /.+\.care$/i
-/.+\.cc$/i
 /.+\.cf$/i
 /.+\.cl$/i
 /.+\.click$/i
@@ -14,7 +12,6 @@
 /.+\.construction$/i
 /.+\.country$/i
 /.+\.cricket$/i
-/.+\.cz$/i
 /.+\.date$/i
 /.+\.desi$/i
 /.+\.download$/i
@@ -28,7 +25,6 @@
 /.+\.guru$/i
 /.+\.icu$/i
 /.+\.id$/i
-/.+\.in$/i
 /.+\.info$/i
 /.+\.in.net$/i
 /.+\.ir$/i
@@ -49,12 +45,8 @@
 /.+\.racing$/i
 /.+\.review$/i
 /.+\.rocks$/i
-/.+\.rs$/i
-/.+\.ru$/i
 /.+\.ryukyu$/i
 /.+\.science$/i
-/.+\.se$/i
-/.+\.si$/i
 /.+\.site$/i
 /.+\.space$/i
 /.+\.stream$/i
@@ -63,10 +55,8 @@
 /.+\.top$/i
 /.+\.topica\.com$/i
 /.+\.town$/i
-/.+\.tr$/i
 /.+\.trade$/i
 /.+\.uno$/i
-/.+\.us$/i
 /.+\.vip$/i
 /.+\.webcam$/i
 /.+\.website$/i
