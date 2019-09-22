@@ -18,7 +18,8 @@ services:
             - unbound
 
     mysql-mailcow:
-      image: mariadb:10.2
+      image: mariadb:10.3
+      stop_grace_period: 45s
       volumes:
         - mysql-vol-1:/var/lib/mysql/
         - mysql-socket-vol-1:/var/run/mysqld/
@@ -94,7 +95,7 @@ services:
             - rspamd
 
     php-fpm-mailcow:
-      image: mailcow/phpfpm:1.44
+      image: mailcow/phpfpm:1.45
       build: ./data/Dockerfiles/phpfpm
       command: "php-fpm -d date.timezone=${TZ} -d expose_php=0"
       depends_on:
@@ -170,7 +171,7 @@ services:
             - sogo
 
     dovecot-mailcow:
-      image: mailcow/dovecot:1.88
+      image: mailcow/dovecot:1.89
       build: ./data/Dockerfiles/dovecot
       dns:
         - ${IPV4_NETWORK:-172.22.1}.254
@@ -226,7 +227,7 @@ services:
             - dovecot
 
     postfix-mailcow:
-      image: mailcow/postfix:1.39
+      image: mailcow/postfix:1.40
       build: ./data/Dockerfiles/postfix
       volumes:
         - ./data/conf/postfix:/opt/postfix/conf
@@ -346,7 +347,7 @@ services:
             - acme
 
     netfilter-mailcow:
-      image: mailcow/netfilter:1.28
+      image: mailcow/netfilter:1.29
       build: ./data/Dockerfiles/netfilter
       stop_grace_period: 30s
       depends_on:
@@ -368,7 +369,7 @@ services:
         - /lib/modules:/lib/modules:ro
 
     watchdog-mailcow:
-      image: mailcow/watchdog:1.58
+      image: mailcow/watchdog:1.59
       # Debug
       #command: /watchdog.sh
       build: ./data/Dockerfiles/watchdog
@@ -423,6 +424,8 @@ services:
       restart: always
       volumes:
         - solr-vol-1:/opt/solr/server/solr/dovecot-fts/data
+      ports:
+        - "${SOLR_PORT:-127.0.0.1:18983}:8983"
       environment:
         - TZ=${TZ}
         - SOLR_HEAP=${SOLR_HEAP:-1024}
