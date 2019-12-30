@@ -216,6 +216,12 @@
         "session_ua": "Formular-Token ungültig: User-Agent-Validierungsfehler"
     },
     "user": {
+        "generate": "generieren",
+        "apple_connection_profile": "Apple Verbindungsprofil",
+        "apple_connection_profile_mailonly": "Dieses Verbindungsprofil beinhaltet IMAP und SMTP Konfigurationen für ein Apple Gerät.",
+        "apple_connection_profile_complete": "Dieses Verbindungsprofil beinhaltet neben IMAP und SMTP Konfigurationen auch Pfade für die Konfiguration von CalDAV (Kalender) und CardDAV (Adressbücher) für ein Apple Gerät.",
+        "email": "E-Mail",
+        "email_and_dav": "E-Mail, Kalender und Adressbücher",
         "create_app_passwd": "Erstelle App Passwort",
         "app_passwds": "App Passwörter",
         "app_name": "App Name",
@@ -366,6 +372,7 @@
         "rsetting_no_selection": "Bitte eine Regel auswählen",
         "rsettings_preset_1": "Alles außer DKIM und Ratelimits für authentifizierte Benutzer deaktivieren",
         "rsettings_preset_2": "Spam an Postmaster-Addressen nicht blockieren",
+        "rsettings_preset_3": "Nur einem oder vielen Absendern erlauben, eine Mailbox anzuschreiben (etwa interne Mailboxen)",
         "rsettings_insert_preset": "Beispiel \"%s\" laden",
         "rsetting_add_rule": "Regel hinzufügen",
         "admin_domains": "Domain-Zuweisungen",
@@ -490,7 +497,8 @@
         "transport_dest_format": "Syntax: example.org, .example.org, *, box@example.org (mehrere Werte getrennt durch Komma einzugeben)",
         "rspamd_global_filters_agree": "Ich werde vorsichtig sein!",
         "rspamd_global_filters": "Globale Filter-Maps",
-        "rspamd_global_filters_info": "Globale Filter-Maps steuern globales White- und Blacklisting dieses Servers. Die akzeptierte Form für Einträge sind <b>ausschließlich</b> Regular Expressions.\r\n  Trotz rudimentärer Überprüfung der Map, kann es zu fehlerhaften Einträgen kommen, die Rspamd im schlechtesten Fall mit unvorhersehbarer Funktionalität bestraft.<br>\r\n  Das korrekte Format lautet \"/pattern/options\" (Beispiel: <code>/.+@domain\\.tld/i</code>).<br>\r\n  Der Name der Map beschreibt die jeweilige Funktion.<br>\r\n  Rspamd versucht die Maps umgehend aufzulösen. Bei Problemen sollte <a href=\"\" data-toggle=\"modal\" data-container=\"rspamd-mailcow\" data-target=\"#RestartContainer\">Rspamd manuell neugestartet werden</a>.",
+        "rspamd_global_filters_info": "Globale Filter-Maps steuern globales White- und Blacklisting dieses Servers.",
+        "rspamd_global_filters_regex": "Die akzeptierte Form für Einträge sind <b>ausschließlich</b> Regular Expressions.\r\n  Trotz rudimentärer Überprüfung der Map, kann es zu fehlerhaften Einträgen kommen, die Rspamd im schlechtesten Fall mit unvorhersehbarer Funktionalität bestraft.<br>\r\n  Das korrekte Format lautet \"/pattern/options\" (Beispiel: <code>/.+@domain\\.tld/i</code>).<br>\r\n  Der Name der Map beschreibt die jeweilige Funktion.<br>\r\n  Rspamd versucht die Maps umgehend aufzulösen. Bei Problemen sollte <a href=\"\" data-toggle=\"modal\" data-container=\"rspamd-mailcow\" data-target=\"#RestartContainer\">Rspamd manuell neugestartet werden</a>.",
         "add_admin": "Administrator hinzufügen",
         "dkim_domains_selector": "Selektor",
         "search_domain_da": "Suche Domains",
@@ -550,6 +558,7 @@
     },
     "mailbox": {
         "tls_policy_maps": "TLS-Richtlinien",
+        "sogo_allow_admin_hint": "Administrative SOGo Logins sind nur für Mailboxen verfügbar, die bereits ein SOGo Profil besitzen. Ein Benutzer muss zumindest einmal in SOGo eingeloggt gewesen sein, um ein Profil zu besitzen.",
         "tls_policy_maps_long": "Ausgehende TLS-Richtlinien",
         "tls_policy_maps_info": "Nachstehende Richtlinien erzwingen TLS-Transportregeln unabhängig von TLS-Richtlinieneinstellungen eines Benutzers.<br>\r\n  Für weitere Informationen zur Syntax sollte <a href=\"http://www.postfix.org/postconf.5.html#smtp_tls_policy_maps\" target=\"_blank\">die \"smtp_tls_policy_maps\" Dokumentation</a> konsultiert werden.",
         "tls_enforce_in": "TLS eingehend erzwingen",
@@ -565,6 +574,7 @@
         "booking_0_short": "Immer verfügbar",
         "booking_lt0_short": "Weiches Limit",
         "booking_custom_short": "Hartes Limit",
+        "alias_domain_alias_hint": "Alias-Adressen werden <b>nicht</b> automatisch auch auf Domain-Alias Adressen angewendet. Eine Alias-Adresse <code>mein-alias@domain</code> bildet demnach <b>nicht</b> die Adresse <code>mein-alias@alias-domain</code> ab.",
         "domain": "Domain",
         "spam_aliases": "Temp. Alias",
         "alias": "Alias",
@@ -663,9 +673,15 @@
         "insert_preset": "Beispiel \"%s\" laden",
         "sieve_preset_header": "Beispielinhalte zur Einsicht stehen nachstehend bereit. Siehe auch <a href=\"https://de.wikipedia.org/wiki/Sieve\" target=\"_blank\">Wikipedia</a>.",
         "sieve_preset_1": "E-Mails mit potenziell gefährlichen Dateitypen abweisen",
-        "sieve_preset_2": "E-Mail eines bestimmten Absenders immer als gelesen markieren"
+        "sieve_preset_2": "E-Mail eines bestimmten Absenders immer als gelesen markieren",
+        "sieve_preset_3": "Lautlos löschen, weitere Ausführung von Filtern verhindern",
+        "sieve_preset_4": "Nach INBOX einsortieren und weitere Filterbearbeitung stoppen",
+        "sieve_preset_5": "Auto-Responder (Vacation, Urlaub)",
+        "sieve_preset_6": "E-Mails mit Nachricht abweisen",
+        "sieve_preset_7": "Weiterleiten und behalten oder verwerfen"
     },
     "edit": {
+        "generate": "generieren",
         "app_name": "App Name",
         "app_passwd": "App Passwörter",
         "sogo_visible": "Alias in SOGo sichtbar",
@@ -846,6 +862,7 @@
         "username": "Benutzername",
         "password": "Passwort",
         "login": "Anmelden",
+        "mobileconfig_info": "Bitte als Mailbox-Benutzer einloggen, um das Verbindungsprofil herunterzuladen.",
         "delayed": "Login wurde zur Sicherheit um %s Sekunde/n verzögert."
     },
     "tfa": {
