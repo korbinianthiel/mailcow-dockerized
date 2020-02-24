@@ -63,7 +63,7 @@
         "global_map_write_error": "Kann globale Map ID %s nicht schreiben: %s",
         "invalid_host": "Ungültiger Host: %s",
         "relayhost_invalid": "Mapeintrag %s ist ungültig",
-        "dkim_domain_or_sel_invalid": "DKIM-Domain oder Selektor nicht korrekt: %s",
+        "dkim_domain_or_sel_invalid": "DKIM-Domain oder Selector nicht korrekt: %s",
         "access_denied": "Zugriff verweigert oder unvollständige/ungültige Daten",
         "domain_invalid": "Domainname ist leer oder ungültig",
         "mailbox_quota_exceeds_domain_quota": "Maximale Größe für Mailboxen überschreitet das Domain Speicherlimit",
@@ -113,6 +113,7 @@
         "invalid_mime_type": "Grafik konnte nicht validiert werden: Ungültiger MIME-Type",
         "imagick_exception": "Fataler Bildverarbeitungsfehler",
         "spam_learn_error": "Spam Lernfehler: %s",
+        "ham_learn_error": "Ham Lernfehler: %s",
         "release_send_failed": "Die Nachricht konnte nicht versendet werden: %s",
         "invalid_recipient_map_new": "Neuer Empfänger \"%s\" ist ungültig",
         "invalid_recipient_map_old": "Originaler Empfänger \"%s\" ist ungültig",
@@ -130,6 +131,7 @@
         "extra_acl_invalid_domain": "Externe Absenderadresse \"%s\" verwendet eine ungültige Domain"
     },
     "success": {
+        "learned_ham": "ID %s wurde erfolreich als Ham gelernt",
         "verified_totp_login": "TOTP Anmeldung verifiziert",
         "verified_u2f_login": "U2F Anmeldung verifiziert",
         "verified_yotp_login": "Yubico OTP Anmeldung verifiziert",
@@ -425,6 +427,7 @@
         "nexthop": "Next Hop",
         "api_allow_from": "IP-Adressen für Zugriff",
         "api_key": "API-Key",
+        "api_skip_ip_check": "IP-Check für API nicht ausführen",
         "activate_api": "API aktivieren",
         "regen_api_key": "API-Key regenerieren",
         "ban_list_info": "Übersicht ausgesperrter Netzwerke: <b>Netzwerk (verbleibende Banzeit) - [Aktionen]</b>.<br />IPs, die zum Entsperren eingereiht werden, verlassen die Liste aktiver Bans nach wenigen Sekunden.<br />Rote Labels sind Indikatoren für aktive Blacklisteinträge.",
@@ -486,7 +489,7 @@
         "text": "Text",
         "activate_send": "Senden-Button freischalten",
         "send": "Senden",
-        "api_info": "Das API befindet sich noch in Entwicklung, eine Dokumentation ist ausstehend.",
+        "api_info": "Das API befindet sich noch in Entwicklung, die Dokumentation kann unter <a href=\"/api\">/api</a> abgerufen werden.",
         "guid_and_license": "GUID & Lizenz",
         "guid": "GUID - Eindeutige Instanz-ID",
         "license_info": "Eine Lizenz ist nicht erforderlich, hilft jedoch der Entwicklung mailcows.<br><a href=\"https://www.servercow.de/mailcow#sal\" target=\"_blank\" alt=\"SAL Bestellung\">Hier kann die mailcow GUID registriert werden.</a> Alternativ ist <a href=\"https://www.servercow.de/mailcow#support\" target=\"_blank\" alt=\"SAL Bestellung\">die Bestellung von Support-Paketen möglich</a>.",
@@ -501,7 +504,7 @@
         "rspamd_global_filters_info": "Globale Filter-Maps steuern globales White- und Blacklisting dieses Servers.",
         "rspamd_global_filters_regex": "Die akzeptierte Form für Einträge sind <b>ausschließlich</b> Regular Expressions.\r\n  Trotz rudimentärer Überprüfung der Map, kann es zu fehlerhaften Einträgen kommen, die Rspamd im schlechtesten Fall mit unvorhersehbarer Funktionalität bestraft.<br>\r\n  Das korrekte Format lautet \"/pattern/options\" (Beispiel: <code>/.+@domain\\.tld/i</code>).<br>\r\n  Der Name der Map beschreibt die jeweilige Funktion.<br>\r\n  Rspamd versucht die Maps umgehend aufzulösen. Bei Problemen sollte <a href=\"\" data-toggle=\"modal\" data-container=\"rspamd-mailcow\" data-target=\"#RestartContainer\">Rspamd manuell neugestartet werden</a>.",
         "add_admin": "Administrator hinzufügen",
-        "dkim_domains_selector": "Selektor",
+        "dkim_domains_selector": "Selector",
         "search_domain_da": "Suche Domains",
         "f2b_blacklist": "Blacklist für Netzwerke und Hosts",
         "no": "&#10005;",
@@ -521,6 +524,9 @@
         "help": "Hilfe ein-/ausblenden"
     },
     "quarantine": {
+        "refresh": "Neu laden",
+        "table_size": "Tabellengröße",
+        "table_size_show_n": "Zeige %s Einträge",
         "disabled_by_config": "Die derzeitige Konfiguration deaktiviert die Funktion des Quarantäne-Systems.",
         "learn_spam_delete": "Als Spam lernen und löschen",
         "quarantine": "Quarantäne",
@@ -558,6 +564,8 @@
         "notified": "Benachrichtigt"
     },
     "mailbox": {
+        "table_size": "Tabellengröße",
+        "table_size_show_n": "Zeige %s Einträge",
         "tls_policy_maps": "TLS-Richtlinien",
         "sogo_allow_admin_hint": "Administrative SOGo Logins sind nur für Mailboxen verfügbar, die bereits ein SOGo Profil besitzen. Ein Benutzer muss zumindest einmal in SOGo eingeloggt gewesen sein, um ein Profil zu besitzen.",
         "tls_policy_maps_long": "Ausgehende TLS-Richtlinien",

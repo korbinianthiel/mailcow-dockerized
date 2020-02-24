@@ -100,7 +100,7 @@ services:
             - rspamd
 
     php-fpm-mailcow:
-      image: mailcow/phpfpm:1.56
+      image: mailcow/phpfpm:1.57
       command: "php-fpm -d date.timezone=${TZ} -d expose_php=0"
       depends_on:
         - redis-mailcow
@@ -152,7 +152,7 @@ services:
             - phpfpm
 
     sogo-mailcow:
-      image: mailcow/sogo:1.71
+      image: mailcow/sogo:1.72
       environment:
         - DBNAME=${DBNAME}
         - DBUSER=${DBUSER}
@@ -175,6 +175,7 @@ services:
         - ./data/conf/sogo/custom-sogo.js:/usr/lib/GNUstep/SOGo/WebServerResources/js/custom-sogo.js
         - mysql-socket-vol-1:/var/run/mysqld/
         - sogo-web-vol-1:/sogo_web
+        - sogo-userdata-backup-vol-1:/sogo_backup
       restart: always
       networks:
         mailcow-network:
@@ -183,7 +184,7 @@ services:
             - sogo
 
     dovecot-mailcow:
-      image: mailcow/dovecot:1.111
+      image: mailcow/dovecot:1.112
       depends_on:
         - mysql-mailcow
       dns:
@@ -244,10 +245,11 @@ services:
             - dovecot
 
     postfix-mailcow:
-      image: mailcow/postfix:1.45
+      image: mailcow/postfix:1.46
       depends_on:
         - mysql-mailcow
       volumes:
+        - ./data/hooks/postfix:/hooks
         - ./data/conf/postfix:/opt/postfix/conf
         - ./data/assets/ssl:/etc/ssl/mail/:ro
         - postfix-vol-1:/var/spool/postfix
@@ -393,7 +395,7 @@ services:
         - /lib/modules:/lib/modules:ro
 
     watchdog-mailcow:
-      image: mailcow/watchdog:1.69
+      image: mailcow/watchdog:1.70
       # Debug
       #command: /watchdog.sh
       dns:
@@ -423,6 +425,22 @@ services:
         - HTTPS_PORT=${HTTPS_PORT:-443}
         - REDIS_SLAVEOF_IP=${REDIS_SLAVEOF_IP:-}
         - REDIS_SLAVEOF_PORT=${REDIS_SLAVEOF_PORT:-}
+        - EXTERNAL_CHECKS_THRESHOLD=1
+        - NGINX_THRESHOLD=5
+        - UNBOUND_THRESHOLD=5
+        - REDIS_THRESHOLD=5
+        - MYSQL_THRESHOLD=5
+        - SOGO_THRESHOLD=3
+        - POSTFIX_THRESHOLD=8
+        - CLAMD_THRESHOLD=15
+        - DOVECOT_THRESHOLD=12
+        - PHPFPM_THRESHOLD=5
+        - RATELIMIT_THRESHOLD=1
+        - FAIL2BAN_THRESHOLD=1
+        - ACME_THRESHOLD=1
+        - IPV6NAT_THRESHOLD=1
+        - RSPAMD_THRESHOLD=5
+        - OLEFY_THRESHOLD=5
       networks:
         mailcow-network:
           aliases:
@@ -531,3 +549,4 @@ volumes:
   postfix-vol-1:
   crypt-vol-1:
   sogo-web-vol-1:
+  sogo-userdata-backup-vol-1:

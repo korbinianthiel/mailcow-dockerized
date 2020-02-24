@@ -48,6 +48,23 @@ $(document).ready(function() {
       $(this.$domain).closest("select").selectpicker();
     }
   });
+  // Set paging
+  $('[data-page-size]').on('click', function(e){
+    e.preventDefault();
+    var new_size = $(this).data('page-size');
+    var parent_ul = $(this).closest('ul');
+    var table_id = $(parent_ul).data('table-id');
+    FooTable.get('#' + table_id).pageSize(new_size);
+    //$(this).parent().addClass('active').siblings().removeClass('active')
+    heading = $(this).parents('.panel').find('.panel-heading')
+    var n_results = $(heading).children('.table-lines').text().split(' / ')[1];
+    $(heading).children('.table-lines').text(function(){
+      if (new_size > n_results) {
+        new_size = n_results;
+      }
+      return new_size + ' / ' + n_results;
+    })
+  });
   // Clone mailbox mass actions
   $("div").find("[data-actions-header='true'").each(function() {
     $(this).html($(this).nextAll('.mass-actions-mailbox:first').html());
@@ -181,10 +198,6 @@ jQuery(function($){
   var entityMap={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;","/":"&#x2F;","`":"&#x60;","=":"&#x3D;"};
   function escapeHtml(n){return String(n).replace(/[&<>"'`=\/]/g,function(n){return entityMap[n]})}
   // http://stackoverflow.com/questions/46155/validate-email-address-in-javascript
-  function validateEmail(email) {
-    var re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-    return re.test(email);
-  }
   function humanFileSize(i){if(Math.abs(i)<1024)return i+" B";var B=["KiB","MiB","GiB","TiB","PiB","EiB","ZiB","YiB"],e=-1;do{i/=1024,++e}while(Math.abs(i)>=1024&&e<B.length-1);return i.toFixed(1)+" "+B[e]}
   $(".refresh_table").on('click', function(e) {
     e.preventDefault();
@@ -205,7 +218,12 @@ jQuery(function($){
     heading = ft.$el.parents('.panel').find('.panel-heading')
     var ft_paging = ft.use(FooTable.Paging)
     $(heading).children('.table-lines').text(function(){
-      return ft_paging.totalRows;
+      var total_rows = ft_paging.totalRows;
+      var size = ft_paging.size;
+      if (size > total_rows) {
+        size = total_rows;
+      }
+      return size + ' / ' + total_rows;
     })
   }
   function draw_domain_table() {
@@ -263,6 +281,9 @@ jQuery(function($){
               item.action += '<a href="/edit/domain/' + encodeURIComponent(item.domain_name) + '" class="btn btn-xs btn-default"><span class="glyphicon glyphicon-pencil"></span> ' + lang.edit + '</a>';
             }
             item.action += '<a href="#dnsInfoModal" class="btn btn-xs btn-info" data-toggle="modal" data-domain="' + encodeURIComponent(item.domain_name) + '"><span class="glyphicon glyphicon-question-sign"></span> DNS</a></div>';
+            if (item.backupmx_int == 1) {
+              item.domain_name = '<span class="glyphicon glyphicon-export"></span> ' + item.domain_name;
+            }
           });
         }
       }),
