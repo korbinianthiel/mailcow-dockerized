@@ -134,11 +134,12 @@ while (($#)); do
       exit 0
     ;;
     --help|-h)
-    echo './update.sh [-c|--check, --ours, --gc, -h|--help]
+    echo './update.sh [-c|--check, --ours, --gc, --skip-start, -h|--help]
 
   -c|--check   -   Check for updates and exit (exit codes => 0: update available, 3: no updates)
   --ours       -   Use merge strategy "ours" to solve conflicts in favor of non-mailcow code (local changes)
   --gc         -   Run garbage collector to delete old image tags
+  --skip-start -   Do not start mailcow after update
 '
     exit 1
   esac
@@ -186,6 +187,7 @@ CONFIG_ARRAY=(
   "ALLOW_ADMIN_EMAIL_LOGIN"
   "SKIP_HTTP_VERIFICATION"
   "SOGO_EXPIRE_SESSION"
+  "REDIS_PORT"
 )
 
 sed -i '$a\' mailcow.conf
@@ -326,6 +328,11 @@ for option in ${CONFIG_ARRAY[@]}; do
       echo '# SOGo session timeout in minutes' >> mailcow.conf
       echo "SOGO_EXPIRE_SESSION=480" >> mailcow.conf
   fi
+  elif [[ ${option} == "REDIS_PORT" ]]; then
+    if ! grep -q ${option} mailcow.conf; then
+      echo "Adding new option \"${option}\" to mailcow.conf"
+      echo "REDIS_PORT=127.0.0.1:7654" >> mailcow.conf
+  fi
   elif ! grep -q ${option} mailcow.conf; then
     echo "Adding new option \"${option}\" to mailcow.conf"
     echo "${option}=n" >> mailcow.conf
@@ -363,6 +370,12 @@ read -r -p "Are you sure you want to update mailcow: dockerized? All containers 
 if [[ ! "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
   echo "OK, exiting."
   exit 0
+fi
+
+echo -e "\e[32mValidating docker-compose stack configuration...\e[0m"
+if ! docker-compose config -q; then
+  echo -e "\e[31m\nOh no, something went wrong. Please check the error message above.\e[0m"
+  exit 1
 fi
 
 DIFF_DIRECTORY=update_diffs
