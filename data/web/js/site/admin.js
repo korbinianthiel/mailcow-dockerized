@@ -21,6 +21,7 @@ jQuery(function($){
   $("#mass_exclude").change(function(){ $("#mass_include").selectpicker('deselectAll'); });
   $("#mass_include").change(function(){ $("#mass_exclude").selectpicker('deselectAll'); });
   $("#mass_disarm").click(function() { $("#mass_send").attr("disabled", !this.checked); });
+  $(".admin-ays-dialog").click(function() { return confirm(lang.ays); });
   $(".validate_rspamd_regex").click(function( event ) {
     event.preventDefault();
     var regex_map_id = $(this).data('regex-map');
@@ -241,7 +242,7 @@ jQuery(function($){
         {"name":"chkbox","title":"","style":{"maxWidth":"60px","width":"60px"},"filterable": false,"sortable": false,"type":"html"},
         {"name":"queue_id","type":"text","title":"QID","style":{"width":"50px"}},
         {"name":"queue_name","type":"text","title":"Queue","style":{"width":"120px"}},
-        {"name":"arrival_time","sorted": true,"direction": "DESC","formatter":function unix_time_format(tm) { var date = new Date(tm ? tm * 1000 : 0); return date.toLocaleString();},"title":lang.arrival_time,"style":{"width":"170px"}},
+        {"name":"arrival_time","sorted": true,"direction": "DESC","formatter":function unix_time_format(tm) { var date = new Date(tm ? tm * 1000 : 0); return date.toLocaleDateString(undefined, {year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit"});},"title":lang.arrival_time,"style":{"width":"170px"}},
         {"name":"message_size","style":{"whiteSpace":"nowrap"},"title":lang.message_size,"formatter": function(value){
           return humanFileSize(value);
         }},
@@ -360,13 +361,22 @@ jQuery(function($){
   draw_transport_maps();
   draw_queue();
   // API IP check toggle
-  $("#skip_ip_check").click(function( event ) {
-   $("#skip_ip_check").not(this).prop('checked', false);
-    if ($("#skip_ip_check:checked").length > 0) {
-      $('#allow_from').prop('disabled', true);
+  $("#skip_ip_check_ro").click(function( event ) {
+   $("#skip_ip_check_ro").not(this).prop('checked', false);
+    if ($("#skip_ip_check_ro:checked").length > 0) {
+      $('#allow_from_ro').prop('disabled', true);
     }
     else {
-      $("#allow_from").removeAttr('disabled');
+      $("#allow_from_ro").removeAttr('disabled');
+    }
+  });
+  $("#skip_ip_check_rw").click(function( event ) {
+   $("#skip_ip_check_rw").not(this).prop('checked', false);
+    if ($("#skip_ip_check_rw:checked").length > 0) {
+      $('#allow_from_rw').prop('disabled', true);
+    }
+    else {
+      $("#allow_from_rw").removeAttr('disabled');
     }
   });
   // Relayhost
@@ -446,48 +456,4 @@ jQuery(function($){
       add_table_row($('#app_link_table'));
   });
 });
-$(window).load(function(){
-  $('.sidebar').affix({
-        offset: {
-            top: 0
-        }
-    }).on('affix.bs.affix',function(){
-        setAffixContainerSize();
-    });
 
-    /*Setting the width of the sidebar (I took 10px of its value which is the margin between cols in my Bootstrap CSS*/
-    function setAffixContainerSize(){
-        $('.sidebar').width($('.sidebar').parent().innerWidth()-10);
-    }
-
-    $(window).resize(function(){
-        setAffixContainerSize();
-    });
-  initial_width_config = $("#sidebar-admin-config").width();
-  initial_width_maps = $("#sidebar-admin-maps").width();
-  $("#scrollbox-config").css("width", initial_width_config);
-  $("#scrollbox-maps").css("width", initial_width_maps);
-  if (sessionStorage.scrollTop > 70) {
-    $('#scrollbox-config').addClass('scrollboxFixed');
-    $('#scrollbox-maps').addClass('scrollboxFixed');
-  }
-  $(window).bind('scroll', function() {
-    if ($(window).scrollTop() > 70) {
-      $('#scrollbox-config').addClass('scrollboxFixed');
-      $('#scrollbox-maps').addClass('scrollboxFixed');
-    } else {
-      $('#scrollbox-config').removeClass('scrollboxFixed');
-      $('#scrollbox-maps').removeClass('scrollboxFixed');
-    }
-  });
-});
-function resizeScrollbox() {
-  on_resize_width_config = $("#sidebar-admin-config").width();
-  on_resize_width_maps = $("#sidebar-admin-maps").width();
-  $("#scrollbox-config").removeAttr("style");
-  $("#scrollbox-config").css("width", on_resize_width_config);
-  $("#scrollbox-maps").removeAttr("style");
-  $("#scrollbox-maps").css("width", on_resize_width_maps);
-}
-$(window).on('resize', resizeScrollbox);
-$('a[data-toggle="tab"]').on('shown.bs.tab', resizeScrollbox);

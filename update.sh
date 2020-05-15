@@ -88,17 +88,20 @@ docker_garbage() {
     echo
     echo "    docker rmi ${IMGS_TO_DELETE[*]}"
     echo
-    read -r -p "Do you want to delete old image tags right now? [y/N] " response
-    if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
-      docker rmi ${IMGS_TO_DELETE[*]}
+    if [ ! $FORCE ]; then
+      read -r -p "Do you want to delete old image tags right now? [y/N] " response
+      if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
+        docker rmi ${IMGS_TO_DELETE[*]}
+      else
+        echo "OK, skipped."
+      fi
     else
-      echo "OK, skipped."
+      echo "Skipped image removal because of force mode."
     fi
   fi
   echo -e "\e[32mFurther cleanup...\e[0m"
   echo "If you want to cleanup further garbage collected by Docker, please make sure all containers are up and running before cleaning your system by executing \"docker system prune\""
 }
-
 
 while (($#)); do
   case "${1}" in
@@ -133,6 +136,10 @@ while (($#)); do
       prefetch_images
       exit 0
     ;;
+    -f|--force)
+      echo -e "\e[32mForcing Update...\e[0m"
+      FORCE=y
+    ;;
     --help|-h)
     echo './update.sh [-c|--check, --ours, --gc, --skip-start, -h|--help]
 
@@ -140,6 +147,7 @@ while (($#)); do
   --ours       -   Use merge strategy "ours" to solve conflicts in favor of non-mailcow code (local changes)
   --gc         -   Run garbage collector to delete old image tags
   --skip-start -   Do not start mailcow after update
+  -f|--force   -   Force update, do not ask questions
 '
     exit 1
   esac
@@ -161,6 +169,7 @@ if cp --help 2>&1 | head -n 1 | grep -q -i "busybox"; then echo "BusybBox cp det
 
 CONFIG_ARRAY=(
   "SKIP_LETS_ENCRYPT"
+  "SKIP_SOGO"
   "USE_WATCHDOG"
   "WATCHDOG_NOTIFY_EMAIL"
   "WATCHDOG_NOTIFY_BAN"
@@ -177,6 +186,7 @@ CONFIG_ARRAY=(
   "COMPOSE_PROJECT_NAME"
   "SQL_PORT"
   "API_KEY"
+  "API_KEY_READ_ONLY"
   "API_ALLOW_FROM"
   "MAILDIR_GC_TIME"
   "MAILDIR_SUB"
@@ -242,10 +252,17 @@ for option in ${CONFIG_ARRAY[@]}; do
       echo '# Create or override API key for web UI' >> mailcow.conf
       echo "#API_KEY=" >> mailcow.conf
     fi
+  elif [[ ${option} == "API_KEY_READ_ONLY" ]]; then
+    if ! grep -q ${option} mailcow.conf; then
+      echo "Adding new option \"${option}\" to mailcow.conf"
+      echo '# Create or override read-only API key for web UI' >> mailcow.conf
+      echo "#API_KEY_READ_ONLY=" >> mailcow.conf
+    fi
   elif [[ ${option} == "API_ALLOW_FROM" ]]; then
     if ! grep -q ${option} mailcow.conf; then
       echo "Adding new option \"${option}\" to mailcow.conf"
       echo '# Must be set for API_KEY to be active' >> mailcow.conf
+      echo '# IPs only, no networks (networks can be set via UI)' >> mailcow.conf
       echo "#API_ALLOW_FROM=" >> mailcow.conf
     fi
   elif [[ ${option} == "SNAT_TO_SOURCE" ]]; then
@@ -300,6 +317,12 @@ for option in ${CONFIG_ARRAY[@]}; do
       echo '# this will allow adding more than 100 domains, but some email clients will not be able to connect with alternative hostnames' >> mailcow.conf
       echo '# see https://wiki.dovecot.org/SSL/SNIClientSupport' >> mailcow.conf
       echo "ENABLE_SSL_SNI=n" >> mailcow.conf
+    fi
+  elif [[ ${option} == "SKIP_SOGO" ]]; then
+    if ! grep -q ${option} mailcow.conf; then
+      echo "Adding new option \"${option}\" to mailcow.conf"
+      echo '# Skip SOGo: Will disable SOGo integration and therefore webmail, DAV protocols and ActiveSync support (experimental, unsupported, not fully implemented) - y/n' >> mailcow.conf
+      echo "SKIP_SOGO=n" >> mailcow.conf
     fi
   elif [[ ${option} == "MAILDIR_SUB" ]]; then
     if ! grep -q ${option} mailcow.conf; then
@@ -356,7 +379,7 @@ SHA1_2=$(sha1sum update.sh)
 if [[ ${SHA1_1} != ${SHA1_2} ]]; then
   echo "update.sh changed, please run this script again, exiting."
   chmod +x update.sh
-  exit 0
+  exit 2
 fi
 
 if [[ -f mailcow.conf ]]; then
@@ -366,10 +389,12 @@ else
   exit 1
 fi
 
-read -r -p "Are you sure you want to update mailcow: dockerized? All containers will be stopped. [y/N] " response
-if [[ ! "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
-  echo "OK, exiting."
-  exit 0
+if [ ! $FORCE ]; then
+  read -r -p "Are you sure you want to update mailcow: dockerized? All containers will be stopped. [y/N] " response
+  if [[ ! "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
+    echo "OK, exiting."
+    exit 0
+  fi
 fi
 
 echo -e "\e[32mValidating docker-compose stack configuration...\e[0m"
@@ -442,11 +467,12 @@ elif [[ $(curl -sL -w "%{http_code}" https://www.servercow.de/docker-compose/lat
   LATEST_COMPOSE=$(curl -#L https://www.servercow.de/docker-compose/latest.php)
   COMPOSE_VERSION=$(docker-compose version --short)
   if [[ "$LATEST_COMPOSE" != "$COMPOSE_VERSION" ]]; then
-    if [[ -w $(which docker-compose) ]]; then
-      curl -#L https://github.com/docker/compose/releases/download/${LATEST_COMPOSE}/docker-compose-$(uname -s)-$(uname -m) > $(which docker-compose)
-      chmod +x $(which docker-compose)
+    COMPOSE_PATH=$(which docker-compose) 
+    if [[ -w ${COMPOSE_PATH} ]]; then
+      curl -#L https://github.com/docker/compose/releases/download/${LATEST_COMPOSE}/docker-compose-$(uname -s)-$(uname -m) > $COMPOSE_PATH
+      chmod +x $COMPOSE_PATH
     else
-      echo -e "\e[33mWARNING: $(which docker-compose) is not writable, but new version $LATEST_COMPOSE is available (installed: $COMPOSE_VERSION)\e[0m"
+      echo -e "\e[33mWARNING: $COMPOSE_PATH is not writable, but new version $LATEST_COMPOSE is available (installed: $COMPOSE_VERSION)\e[0m"
     fi
   fi
 else

@@ -66,7 +66,7 @@ def notify_rcpt(rcpt, msg_count, quarantine_acl):
   else:
     with open('/templates/quarantine.tpl') as file_:
       template = Template(file_.read())
-  html = template.render(meta=meta_query, counter=msg_count, hostname=socket.gethostname(), quarantine_acl=quarantine_acl)
+  html = template.render(meta=meta_query, username=rcpt, counter=msg_count, hostname=socket.gethostname(), quarantine_acl=quarantine_acl)
   text = html2text.html2text(html)
   count = 0
   while count < 15:
@@ -97,7 +97,13 @@ def notify_rcpt(rcpt, msg_count, quarantine_acl):
       print('%s'  % (ex))
       time.sleep(3)
 
-records = query_mysql('SELECT IFNULL(user_acl.quarantine, 0) AS quarantine_acl, count(id) AS counter, rcpt FROM quarantine LEFT OUTER JOIN user_acl ON user_acl.username = rcpt WHERE notified = 0 AND rcpt in (SELECT username FROM mailbox) GROUP BY rcpt')
+records = query_mysql("""
+SELECT IFNULL(user_acl.quarantine, 0) AS quarantine_acl, count(id) AS counter, rcpt, sender FROM quarantine
+LEFT OUTER JOIN user_acl ON user_acl.username = rcpt
+WHERE notified = 0 AND rcpt in (SELECT username FROM mailbox)
+# dont send notifications for blacklisted senders
+AND (SELECT prefid FROM filterconf WHERE option = "blacklist_from" AND (object = rcpt OR object = SUBSTRING(rcpt, LOCATE("@", rcpt) + 1)) AND sender REGEXP(REPLACE(value, '*', '.+'))) IS NULL GROUP BY rcpt
+""")
 
 for record in records:
   attrs = ''
