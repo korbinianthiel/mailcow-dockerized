@@ -2,7 +2,7 @@ version: '2.1'
 services:
 
     unbound-mailcow:
-      image: mailcow/unbound:1.11
+      image: mailcow/unbound:1.12
       environment:
         - TZ=${TZ}
       volumes:
@@ -56,7 +56,7 @@ services:
             - redis
 
     clamd-mailcow:
-      image: mailcow/clamd:1.35
+      image: mailcow/clamd:1.36
       restart: always
       dns:
         - ${IPV4_NETWORK:-172.22.1}.254
@@ -102,7 +102,7 @@ services:
             - rspamd
 
     php-fpm-mailcow:
-      image: mailcow/phpfpm:1.62
+      image: mailcow/phpfpm:1.63
       command: "php-fpm -d date.timezone=${TZ} -d expose_php=0"
       depends_on:
         - redis-mailcow
@@ -191,7 +191,7 @@ services:
             - sogo
 
     dovecot-mailcow:
-      image: mailcow/dovecot:1.123
+      image: mailcow/dovecot:1.125
       depends_on:
         - mysql-mailcow
       dns:
@@ -404,7 +404,7 @@ services:
         - /lib/modules:/lib/modules:ro
 
     watchdog-mailcow:
-      image: mailcow/watchdog:1.76
+      image: mailcow/watchdog:1.78
       # Debug
       #command: /watchdog.sh
       dns:
@@ -412,6 +412,7 @@ services:
       volumes:
         - rspamd-vol-1:/var/lib/rspamd
         - mysql-socket-vol-1:/var/run/mysqld/
+        - postfix-vol-1:/var/spool/postfix
         - ./data/assets/ssl:/etc/ssl/mail/:ro
       restart: always
       environment:
@@ -455,13 +456,15 @@ services:
         - IPV6NAT_THRESHOLD=1
         - RSPAMD_THRESHOLD=5
         - OLEFY_THRESHOLD=5
+        - MAILQ_THRESHOLD=3
+        - MAILQ_CRIT=30
       networks:
         mailcow-network:
           aliases:
             - watchdog
 
     dockerapi-mailcow:
-      image: mailcow/dockerapi:1.36
+      image: mailcow/dockerapi:1.37
       restart: always
       oom_kill_disable: true
       dns:
