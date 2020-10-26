@@ -215,6 +215,8 @@ CONFIG_ARRAY=(
   "SKIP_HTTP_VERIFICATION"
   "SOGO_EXPIRE_SESSION"
   "REDIS_PORT"
+  "DOVECOT_MASTER_USER"
+  "DOVECOT_MASTER_PASS"
 )
 
 sed -i --follow-symlinks '$a\' mailcow.conf
@@ -373,6 +375,21 @@ for option in ${CONFIG_ARRAY[@]}; do
       echo "Adding new option \"${option}\" to mailcow.conf"
       echo "REDIS_PORT=127.0.0.1:7654" >> mailcow.conf
   fi
+  elif [[ ${option} == "DOVECOT_MASTER_USER" ]]; then
+    if ! grep -q ${option} mailcow.conf; then
+      echo "Adding new option \"${option}\" to mailcow.conf"
+      echo '# DOVECOT_MASTER_USER and _PASS must _both_ be provided. No special chars.' >> mailcow.conf
+      echo '# Empty by default to auto-generate master user and password on start.' >> mailcow.conf
+      echo '# User expands to DOVECOT_MASTER_USER@mailcow.local' >> mailcow.conf
+      echo '# LEAVE EMPTY IF UNSURE' >> mailcow.conf
+      echo "DOVECOT_MASTER_USER=" >> mailcow.conf
+  fi
+  elif [[ ${option} == "DOVECOT_MASTER_PASS" ]]; then
+    if ! grep -q ${option} mailcow.conf; then
+      echo "Adding new option \"${option}\" to mailcow.conf"
+      echo '# LEAVE EMPTY IF UNSURE' >> mailcow.conf
+      echo "DOVECOT_MASTER_PASS=" >> mailcow.conf
+  fi
   elif ! grep -q ${option} mailcow.conf; then
     echo "Adding new option \"${option}\" to mailcow.conf"
     echo "${option}=n" >> mailcow.conf
@@ -482,6 +499,8 @@ fi
 
 if [[ ${NO_UPDATE_COMPOSE} == "y" ]]; then
   echo -e "\e[33mNot fetching latest docker-compose, please check for updates manually!\e[0m"
+elif [[ -e /etc/alpine-release ]]; then
+  echo -e "\e[33mNot fetching latest docker-compose, because you are using Alpine Linux without glibc support. Please update docker-compose via apk!\e[0m"
 else
   echo -e "\e[32mFetching new docker-compose version...\e[0m"
   sleep 1
