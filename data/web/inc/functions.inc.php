@@ -89,6 +89,10 @@ function hash_password($password) {
   global $default_pass_scheme;
   $pw_hash = NULL;
   switch (strtoupper($default_pass_scheme)) {
+    case "SSHA":
+      $salt_str = bin2hex(openssl_random_pseudo_bytes(8));
+      $pw_hash = "{SSHA}".base64_encode(hash('sha1', $password . $salt_str, true) . $salt_str);
+      break;
     case "SSHA256":
       $salt_str = bin2hex(openssl_random_pseudo_bytes(8));
       $pw_hash = "{SSHA256}".base64_encode(hash('sha256', $password . $salt_str, true) . $salt_str);
@@ -143,6 +147,7 @@ function sys_mail($_data) {
   $mailboxes = array();
   $mass_from = $_data['mass_from'];
   $mass_text = $_data['mass_text'];
+  $mass_html = $_data['mass_html'];
   $mass_subject = $_data['mass_subject'];
   if (!filter_var($mass_from, FILTER_VALIDATE_EMAIL)) {
 		$_SESSION['return'][] =  array(
@@ -202,7 +207,13 @@ function sys_mail($_data) {
     $mail->setFrom($mass_from);
     $mail->Subject = $mass_subject;
     $mail->CharSet ="UTF-8";
-    $mail->Body = $mass_text;
+    if (!empty($mass_html)) {
+      $mail->Body = $mass_html;
+      $mail->AltBody = $mass_text;
+    }
+    else {
+      $mail->Body = $mass_text;
+    }
     $mail->XMailer = 'MooMassMail';
     foreach ($rcpts as $rcpt) {
       $mail->AddAddress($rcpt);
@@ -332,6 +343,9 @@ function hasDomainAccess($username, $role, $domain) {
 }
 function hasMailboxObjectAccess($username, $role, $object) {
 	global $pdo;
+	if (empty($username) || empty($role) || empty($object)) {
+		return false;
+	}
 	if (!filter_var(html_entity_decode(rawurldecode($username)), FILTER_VALIDATE_EMAIL) && !ctype_alnum(str_replace(array('_', '.', '-'), '', $username))) {
 		return false;
 	}
@@ -481,6 +495,20 @@ function verify_hash($hash, $password) {
     $osalt = str_replace($ohash, '', $dhash);
     // Check single salted SHA256 hash against extracted hash
     if (hash_equals(hash('sha256', $password . $osalt, true), $ohash)) {
+      return true;
+    }
+  }
+  elseif (preg_match('/^{SSHA}/i', $hash)) {
+    // Remove tag if any
+    $hash = preg_replace('/^{SSHA}/i', '', $hash);
+    // Decode hash
+    $dhash = base64_decode($hash);
+    // Get first 20 bytes of binary which equals a SSHA hash
+    $ohash = substr($dhash, 0, 20);
+    // Remove SSHA hash from decoded hash to get original salt string
+    $osalt = str_replace($ohash, '', $dhash);
+    // Check single salted SSHA hash against extracted hash
+    if (hash_equals(hash('sha1', $password . $osalt, true), $ohash)) {
       return true;
     }
   }
@@ -1059,12 +1087,12 @@ function fido2($_data) {
         $_SESSION['mailcow_cc_role'] != "admin") {
           return false;
       }
-      $stmt = $pdo->prepare("SELECT SHA2(`credentialId`, 256) AS `cid`, `certificateSubject`, `friendlyName` FROM `fido2` WHERE `username` = :username");
+      $stmt = $pdo->prepare("SELECT SHA2(`credentialId`, 256) AS `cid`, `created`, `certificateSubject`, `friendlyName` FROM `fido2` WHERE `username` = :username");
       $stmt->execute(array(':username' => $username));
       $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
       while($row = array_shift($rows)) {
         $fns[] = array(
-          "subject" => $row['certificateSubject'],
+          "subject" => (empty($row['certificateSubject']) ? 'Unknown (' . $row['created'] . ')' : $row['certificateSubject']),
           "fn" => $row['friendlyName'],
           "cid" => $row['cid']
         );
