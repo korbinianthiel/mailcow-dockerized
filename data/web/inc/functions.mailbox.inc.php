@@ -997,7 +997,7 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
             COUNT(*) as count,
             COALESCE(ROUND(SUM(`quota`)/1048576), 0) as `quota`
               FROM `mailbox`
-                WHERE `kind` NOT REGEXP 'location|thing|group'
+                WHERE (`kind` = '' OR `kind` = NULL)
                   AND `domain` = :domain");
           $stmt->execute(array(':domain' => $domain));
           $MailboxData = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -1062,13 +1062,7 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
               );
               return false;
             }
-            // support pre hashed passwords
-            if (preg_match('/^{(ARGON2I|ARGON2ID|BLF-CRYPT|CLEAR|CLEARTEXT|CRYPT|DES-CRYPT|LDAP-MD5|MD5|MD5-CRYPT|PBKDF2|PLAIN|PLAIN-MD4|PLAIN-MD5|PLAIN-TRUNC|PLAIN-TRUNC|SHA|SHA1|SHA256|SHA256-CRYPT|SHA512|SHA512-CRYPT|SMD5|SSHA|SSHA256|SSHA512)}/i', $password)) {
-              $password_hashed = $password;
-            }
-            else {
-              $password_hashed = hash_password($password);
-            }
+            $password_hashed = hash_password($password);
           }
           else {
             $_SESSION['return'][] = array(
@@ -1940,6 +1934,52 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
               );
               continue;
             }
+            if ($_data['expand_alias'] === true || $_data['expand_alias'] == 1) {
+              $stmt = $pdo->prepare("SELECT `address` FROM `alias`
+                WHERE `address` = :address
+                  AND `domain` NOT IN (
+                    SELECT `alias_domain` FROM `alias_domain`
+                  )");
+              $stmt->execute(array(
+                ':address' => $address,
+              ));
+              $num_results = count($stmt->fetchAll(PDO::FETCH_ASSOC));
+              if ($num_results == 0) {
+                $_SESSION['return'][] = array(
+                  'type' => 'warning',
+                  'log' => array(__FUNCTION__, $_action, $_type, $_data_log, $_attr),
+                  'msg' => array('is_not_primary_alias', htmlspecialchars($address))
+                );
+                continue;
+              }
+              $stmt = $pdo->prepare("SELECT `goto`, GROUP_CONCAT(CONCAT(SUBSTRING(`alias`.`address`, 1, LOCATE('@', `alias`.`address`) - 1), '@', `alias_domain`.`alias_domain`)) AS `missing_alias`
+                FROM `alias` JOIN `alias_domain` ON `alias_domain`.`target_domain` = `alias`.`domain`
+                    WHERE CONCAT(SUBSTRING(`alias`.`address`, 1, LOCATE('@', `alias`.`address`) - 1), '@', `alias_domain`.`alias_domain`) NOT IN (
+                      SELECT `address` FROM `alias` WHERE `address` != `goto`
+                    )
+                    AND `alias`.`address` NOT IN (
+                      SELECT `address` FROM `alias` WHERE `address` = `goto`
+                    )
+                    AND `address` = :address ;");
+              $stmt->execute(array(
+                ':address' => $address
+              ));
+              $missing_aliases = $stmt->fetch(PDO::FETCH_ASSOC);
+              if (!empty($missing_aliases['missing_alias'])) {
+                mailbox('add', 'alias', array(
+                  'address' => $missing_aliases['missing_alias'],
+                  'goto' => $missing_aliases['goto'],
+                  'sogo_visible' => 1,
+                  'active' => 1
+                ));
+              }
+              $_SESSION['return'][] = array(
+                'type' => 'success',
+                'log' => array(__FUNCTION__, $_action, $_type, $_data_log, $_attr),
+                'msg' => array('alias_modified', htmlspecialchars($address))
+              );
+              continue;
+            }
             $domain = idn_to_ascii(substr(strstr($address, '@'), 1), 0, INTL_IDNA_VARIANT_UTS46);
             if ($is_now['address'] != $address) {
               $local_part = strstr($address, '@', true);
@@ -2175,7 +2215,7 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
                   MAX(COALESCE(ROUND(`quota`/1048576), 0)) AS `biggest_mailbox`,
                   COALESCE(ROUND(SUM(`quota`)/1048576), 0) AS `quota_all`
                     FROM `mailbox`
-                      WHERE `kind` NOT REGEXP 'location|thing|group'
+                      WHERE (`kind` = '' OR `kind` = NULL)
                         AND domain = :domain");
               $stmt->execute(array(':domain' => $domain));
               $MailboxData = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -2847,7 +2887,7 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
             return false;
           }
           elseif (isset($_data) && hasDomainAccess($_SESSION['mailcow_cc_username'], $_SESSION['mailcow_cc_role'], $_data)) {
-            $stmt = $pdo->prepare("SELECT `username` FROM `mailbox` WHERE `kind` NOT REGEXP 'location|thing|group' AND `domain` = :domain");
+            $stmt = $pdo->prepare("SELECT `username` FROM `mailbox` WHERE (`kind` = '' OR `kind` = NULL) AND `domain` = :domain");
             $stmt->execute(array(
               ':domain' => $_data,
             ));
@@ -2857,7 +2897,7 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
             }
           }
           else {
-            $stmt = $pdo->prepare("SELECT `username` FROM `mailbox` WHERE `kind` NOT REGEXP 'location|thing|group' AND (`domain` IN (SELECT `domain` FROM `domain_admins` WHERE `active` = '1' AND `username` = :username) OR 'admin' = :role)");
+            $stmt = $pdo->prepare("SELECT `username` FROM `mailbox` WHERE (`kind` = '' OR `kind` = NULL) AND (`domain` IN (SELECT `domain` FROM `domain_admins` WHERE `active` = '1' AND `username` = :username) OR 'admin' = :role)");
             $stmt->execute(array(
               ':username' => $_SESSION['mailcow_cc_username'],
               ':role' => $_SESSION['mailcow_cc_role'],
@@ -3392,10 +3432,10 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
           if (empty($row)) {
             return false;
           }
-          $stmt = $pdo->prepare("SELECT COUNT(*) AS `count`,
+          $stmt = $pdo->prepare("SELECT COUNT(`username`) AS `count`,
             COALESCE(SUM(`quota`), 0) AS `in_use`
               FROM `mailbox`
-                WHERE `kind` NOT REGEXP 'location|thing|group'
+                WHERE (`kind` = '' OR `kind` = NULL)
                   AND `domain` = :domain");
           $stmt->execute(array(':domain' => $row['domain']));
           $MailboxDataDomain = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -3451,7 +3491,7 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
           $domaindata['relay_all_recipients_int'] = $row['relay_all_recipients'];
           $domaindata['relay_unknown_only'] = $row['relay_unknown_only'];
           $domaindata['relay_unknown_only_int'] = $row['relay_unknown_only'];
-          $stmt = $pdo->prepare("SELECT COUNT(*) AS `alias_count` FROM `alias`
+          $stmt = $pdo->prepare("SELECT COUNT(`address`) AS `alias_count` FROM `alias`
             WHERE (`domain`= :domain OR `domain` IN (SELECT `alias_domain` FROM `alias_domain` WHERE `target_domain` = :domain2))
               AND `address` NOT IN (
                 SELECT `username` FROM `mailbox`
@@ -3479,7 +3519,6 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
             return false;
           }
           $mailboxdata = array();
-          $rl = ratelimit('get', 'mailbox', $_data);
           $last_imap_login = $redis->Get('last-login/imap/' . $_data);
           $last_smtp_login = $redis->Get('last-login/smtp/' . $_data);
           $last_pop3_login = $redis->Get('last-login/pop3/' . $_data);
@@ -3507,7 +3546,10 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
               `attributes`,
               `quota2`.`messages`
                 FROM `mailbox`, `quota2`, `domain`
-                  WHERE `mailbox`.`kind` NOT REGEXP 'location|thing|group' AND `mailbox`.`username` = `quota2`.`username` AND `domain`.`domain` = `mailbox`.`domain` AND `mailbox`.`username` = :mailbox");
+                  WHERE (`mailbox`.`kind` = '' OR `mailbox`.`kind` = NULL)
+                    AND `mailbox`.`username` = `quota2`.`username`
+                    AND `domain`.`domain` = `mailbox`.`domain`
+                    AND `mailbox`.`username` = :mailbox");
           }
           else {
             $stmt = $pdo->prepare("SELECT
@@ -3524,55 +3566,34 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
               `attributes`,
               `quota2replica`.`messages`
                 FROM `mailbox`, `quota2replica`, `domain`
-                  WHERE `mailbox`.`kind` NOT REGEXP 'location|thing|group' AND `mailbox`.`username` = `quota2replica`.`username` AND `domain`.`domain` = `mailbox`.`domain` AND `mailbox`.`username` = :mailbox");
+                  WHERE (`mailbox`.`kind` = '' OR `mailbox`.`kind` = NULL)
+                    AND `mailbox`.`username` = `quota2replica`.`username`
+                    AND `domain`.`domain` = `mailbox`.`domain`
+                    AND `mailbox`.`username` = :mailbox");
           }
           $stmt->execute(array(
             ':mailbox' => $_data,
           ));
           $row = $stmt->fetch(PDO::FETCH_ASSOC);
-          $stmt = $pdo->prepare("SELECT `maxquota`, `quota` FROM  `domain` WHERE `domain` = :domain");
-          $stmt->execute(array(':domain' => $row['domain']));
-          $DomainQuota  = $stmt->fetch(PDO::FETCH_ASSOC);
-          $stmt = $pdo->prepare("SELECT IFNULL(COUNT(`active`), 0) AS `pushover_active` FROM `pushover` WHERE `username` = :username AND `active` = 1");
-          $stmt->execute(array(':username' => $_data));
-          $PushoverActive  = $stmt->fetch(PDO::FETCH_ASSOC);
-          $stmt = $pdo->prepare("SELECT COALESCE(SUM(`quota`), 0) as `in_use` FROM `mailbox` WHERE `kind` NOT REGEXP 'location|thing|group' AND `domain` = :domain AND `username` != :username");
-          $stmt->execute(array(':domain' => $row['domain'], ':username' => $_data));
-          $MailboxUsage	= $stmt->fetch(PDO::FETCH_ASSOC);
-          $stmt = $pdo->prepare("SELECT IFNULL(COUNT(`address`), 0) AS `sa_count` FROM `spamalias` WHERE `goto` = :address AND `validity` >= :unixnow");
-          $stmt->execute(array(':address' => $_data, ':unixnow' => time()));
-          $SpamaliasUsage	= $stmt->fetch(PDO::FETCH_ASSOC);
-          $mailboxdata['max_new_quota'] = ($DomainQuota['quota'] * 1048576) - $MailboxUsage['in_use'];
-          if ($mailboxdata['max_new_quota'] > ($DomainQuota['maxquota'] * 1048576)) {
-            $mailboxdata['max_new_quota'] = ($DomainQuota['maxquota'] * 1048576);
-          }
+
           $mailboxdata['username'] = $row['username'];
-          if (!empty($rl)) {
-            $mailboxdata['rl'] = $rl;
-            $mailboxdata['rl_scope'] = 'mailbox';
-          }
-          else {
-            $mailboxdata['rl'] = ratelimit('get', 'domain', $row['domain']);
-            $mailboxdata['rl_scope'] = 'domain';
-          }
-          $mailboxdata['is_relayed'] = $row['backupmx'];
-          $mailboxdata['name'] = $row['name'];
-          $mailboxdata['last_imap_login'] = $last_imap_login;
-          $mailboxdata['last_smtp_login'] = $last_smtp_login;
-          $mailboxdata['last_pop3_login'] = $last_pop3_login;
           $mailboxdata['active'] = $row['active'];
           $mailboxdata['active_int'] = $row['active'];
           $mailboxdata['domain'] = $row['domain'];
           $mailboxdata['domain_xmpp'] = $row['domain_xmpp'];
+          $mailboxdata['name'] = $row['name'];
           $mailboxdata['domain_xmpp_prefix'] = $row['domain_xmpp_prefix'];
           $mailboxdata['local_part'] = $row['local_part'];
           $mailboxdata['quota'] = $row['quota'];
+          $mailboxdata['messages'] = $row['messages'];
           $mailboxdata['attributes'] = json_decode($row['attributes'], true);
           $mailboxdata['quota_used'] = intval($row['bytes']);
           $mailboxdata['percent_in_use'] = ($row['quota'] == 0) ? '- ' : round((intval($row['bytes']) / intval($row['quota'])) * 100);
-          $mailboxdata['messages'] = $row['messages'];
-          $mailboxdata['spam_aliases'] = $SpamaliasUsage['sa_count'];
-          $mailboxdata['pushover_active'] = ($PushoverActive['pushover_active'] == 1) ? 1 : 0;
+
+          $mailboxdata['last_imap_login'] = $last_imap_login;
+          $mailboxdata['last_smtp_login'] = $last_smtp_login;
+          $mailboxdata['last_pop3_login'] = $last_pop3_login;
+
           if ($mailboxdata['percent_in_use'] === '- ') {
             $mailboxdata['percent_class'] = "info";
           }
@@ -3585,6 +3606,38 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
           else {
             $mailboxdata['percent_class'] = "success";
           }
+
+          if (!isset($_extra) || $_extra != 'reduced') {
+            $rl = ratelimit('get', 'mailbox', $_data);
+            $stmt = $pdo->prepare("SELECT `maxquota`, `quota` FROM  `domain` WHERE `domain` = :domain");
+            $stmt->execute(array(':domain' => $row['domain']));
+            $DomainQuota  = $stmt->fetch(PDO::FETCH_ASSOC);
+            $stmt = $pdo->prepare("SELECT IFNULL(COUNT(`active`), 0) AS `pushover_active` FROM `pushover` WHERE `username` = :username AND `active` = 1");
+            $stmt->execute(array(':username' => $_data));
+            $PushoverActive  = $stmt->fetch(PDO::FETCH_ASSOC);
+            $stmt = $pdo->prepare("SELECT COALESCE(SUM(`quota`), 0) as `in_use` FROM `mailbox` WHERE (`kind` = '' OR `kind` = NULL) AND `domain` = :domain AND `username` != :username");
+            $stmt->execute(array(':domain' => $row['domain'], ':username' => $_data));
+            $MailboxUsage	= $stmt->fetch(PDO::FETCH_ASSOC);
+            $stmt = $pdo->prepare("SELECT IFNULL(COUNT(`address`), 0) AS `sa_count` FROM `spamalias` WHERE `goto` = :address AND `validity` >= :unixnow");
+            $stmt->execute(array(':address' => $_data, ':unixnow' => time()));
+            $SpamaliasUsage	= $stmt->fetch(PDO::FETCH_ASSOC);
+            $mailboxdata['max_new_quota'] = ($DomainQuota['quota'] * 1048576) - $MailboxUsage['in_use'];
+            $mailboxdata['spam_aliases'] = $SpamaliasUsage['sa_count'];
+            $mailboxdata['pushover_active'] = ($PushoverActive['pushover_active'] == 1) ? 1 : 0;
+            if ($mailboxdata['max_new_quota'] > ($DomainQuota['maxquota'] * 1048576)) {
+              $mailboxdata['max_new_quota'] = ($DomainQuota['maxquota'] * 1048576);
+            }
+            if (!empty($rl)) {
+              $mailboxdata['rl'] = $rl;
+              $mailboxdata['rl_scope'] = 'mailbox';
+            }
+            else {
+              $mailboxdata['rl'] = ratelimit('get', 'domain', $row['domain']);
+              $mailboxdata['rl_scope'] = 'domain';
+            }
+            $mailboxdata['is_relayed'] = $row['backupmx'];
+          }
+
           return $mailboxdata;
         break;
         case 'resource_details':
