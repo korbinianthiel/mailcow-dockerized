@@ -35,7 +35,7 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
           else {
             $username = $_SESSION['mailcow_cc_username'];
           }
-          if (!is_numeric($_data["validity"]) || $_data["validity"] > 672) {
+          if (isset($_data["validity"]) && !filter_var($_data["validity"], FILTER_VALIDATE_INT, array('options' => array('min_range' => 1, 'max_range' => 87600)))) {
             $_SESSION['return'][] = array(
               'type' => 'danger',
               'log' => array(__FUNCTION__, $_action, $_type, $_data_log, $_attr),
@@ -43,8 +43,17 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
             );
             return false;
           }
-          $domain = mailbox('get', 'mailbox_details', $username)['domain'];
-          if (!is_valid_domain_name($domain)) {
+          else {
+            // Default to 1 yr
+            $_data["validity"] = 8760;
+          }
+          $domain = $_data['domain'];
+          $valid_domains[] = mailbox('get', 'mailbox_details', $username)['domain'];
+          $valid_alias_domains = user_get_alias_details($username)['alias_domains'];
+          if (!empty($valid_alias_domains)) {
+            $valid_domains = array_merge($valid_domains, $valid_alias_domains);
+          }
+          if (!in_array($domain, $valid_domains)) {
             $_SESSION['return'][] = array(
               'type' => 'danger',
               'log' => array(__FUNCTION__, $_action, $_type, $_data_log, $_attr),
@@ -52,13 +61,11 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
             );
             return false;
           }
-          $validity = strtotime("+".$_data["validity"]." hour");
-          $letters = 'abcefghijklmnopqrstuvwxyz1234567890';
-          $random_name = substr(str_shuffle($letters), 0, 24);
+          $validity = strtotime("+" . $_data["validity"] . " hour");
           $stmt = $pdo->prepare("INSERT INTO `spamalias` (`address`, `goto`, `validity`) VALUES
             (:address, :goto, :validity)");
           $stmt->execute(array(
-            ':address' => $random_name . '@' . $domain,
+            ':address' => readable_random_string(rand(rand(3, 9), rand(3, 9))) . '.' . readable_random_string(rand(rand(3, 9), rand(3, 9))) . '@' . $domain,
             ':goto' => $username,
             ':validity' => $validity
           ));
@@ -677,6 +684,7 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
                 continue;
               }
             }
+            $gotos = array_unique($gotos);
             $gotos = array_filter($gotos);
             if (empty($gotos)) { return false; }
             $goto = implode(",", $gotos);
@@ -1501,6 +1509,9 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
               );
               continue;
             }
+            if ($lowspamlevel == $highspamlevel) {
+              $highspamlevel = $highspamlevel + 0.1;
+            }
             $stmt = $pdo->prepare("DELETE FROM `filterconf` WHERE `object` = :username
               AND (`option` = 'lowspamlevel' OR `option` = 'highspamlevel')");
             $stmt->execute(array(
@@ -2072,6 +2083,7 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
                   ':address' => $address
                 ));
               }
+              $gotos = array_unique($gotos);
               $gotos = array_filter($gotos);
               $goto = implode(",", $gotos);
             }
@@ -2129,6 +2141,7 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
                 $xmpp                 = (isset($_data['xmpp']) && !empty($_SESSION['acl']['xmpp_domain_access']) && $_SESSION['acl']['xmpp_domain_access'] == "1") ? intval($_data['xmpp']) : $is_now['xmpp'];
                 $xmpp_prefix          = (!empty($_data['xmpp_prefix']) && !empty($_SESSION['acl']['xmpp_prefix']) && $_SESSION['acl']['xmpp_prefix'] == "1") ? $_data['xmpp_prefix'] : $is_now['xmpp_prefix'];
                 $description          = (!empty($_data['description']) && isset($_SESSION['acl']['domain_desc']) && $_SESSION['acl']['domain_desc'] == "1") ? $_data['description'] : $is_now['description'];
+                (int)$relayhost       = (isset($_data['relayhost']) && isset($_SESSION['acl']['domain_relayhost']) && $_SESSION['acl']['domain_relayhost'] == "1") ? intval($_data['relayhost']) : intval($is_now['relayhost']);
               }
               else {
                 $_SESSION['return'][] = array(
@@ -2347,6 +2360,7 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
               (int)$smtp_access = (isset($_data['smtp_access']) && isset($_SESSION['acl']['protocol_access']) && $_SESSION['acl']['protocol_access'] == "1") ? intval($_data['smtp_access']) : intval($is_now['attributes']['smtp_access']);
               (int)$xmpp_admin = (isset($_data['xmpp_admin']) && isset($_SESSION['acl']['xmpp_admin']) && $_SESSION['acl']['xmpp_admin'] == "1") ? intval($_data['xmpp_admin']) : intval($is_now['attributes']['xmpp_admin']);
               (int)$xmpp_access = (isset($_data['xmpp_access']) && isset($_SESSION['acl']['xmpp_mailbox_access']) && $_SESSION['acl']['xmpp_mailbox_access'] == "1") ? intval($_data['xmpp_access']) : intval($is_now['attributes']['xmpp_access']);
+              (int)$relayhost = (isset($_data['relayhost']) && isset($_SESSION['acl']['mailbox_relayhost']) && $_SESSION['acl']['mailbox_relayhost'] == "1") ? intval($_data['relayhost']) : intval($is_now['attributes']['relayhost']);
               (int)$quota_m = (isset_has_content($_data['quota'])) ? intval($_data['quota']) : ($is_now['quota'] / 1048576);
               $name       = (!empty($_data['name'])) ? ltrim(rtrim($_data['name'], '>'), '<') : $is_now['name'];
               $domain     = $is_now['domain'];
@@ -2619,6 +2633,7 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
                 `attributes` = JSON_SET(`attributes`, '$.pop3_access', :pop3_access),
                 `attributes` = JSON_SET(`attributes`, '$.xmpp_admin', :xmpp_admin),
                 `attributes` = JSON_SET(`attributes`, '$.xmpp_access', :xmpp_access),
+                `attributes` = JSON_SET(`attributes`, '$.relayhost', :relayhost),
                 `attributes` = JSON_SET(`attributes`, '$.smtp_access', :smtp_access)
                   WHERE `username` = :username");
             $stmt->execute(array(
@@ -2632,6 +2647,7 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
               ':smtp_access' => $smtp_access,
               ':xmpp_admin' => $xmpp_admin,
               ':xmpp_access' => $xmpp_access,
+              ':relayhost' => $relayhost,
               ':username' => $username
             ));
             $_SESSION['return'][] = array(
@@ -3147,7 +3163,9 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
           }
           $stmt = $pdo->prepare("SELECT `address`,
             `goto`,
-            `validity`
+            `validity`,
+            `created`,
+            `modified`
               FROM `spamalias`
                 WHERE `goto` = :username
                   AND `validity` >= :unixnow");
@@ -3485,18 +3503,6 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
             return false;
           }
           $mailboxdata = array();
-          $last_imap_login = $redis->Get('last-login/imap/' . $_data);
-          $last_smtp_login = $redis->Get('last-login/smtp/' . $_data);
-          $last_pop3_login = $redis->Get('last-login/pop3/' . $_data);
-          if ($last_imap_login === false || $GLOBALS['SHOW_LAST_LOGIN'] === false) {
-            $last_imap_login = '0';
-          }
-          if ($last_smtp_login === false || $GLOBALS['SHOW_LAST_LOGIN'] === false) {
-            $last_smtp_login = '0';
-          }
-          if ($last_pop3_login === false || $GLOBALS['SHOW_LAST_LOGIN'] === false) {
-            $last_pop3_login = '0';
-          }
           if (preg_match('/y|yes/i', getenv('MASTER'))) {
             $stmt = $pdo->prepare("SELECT
               `domain`.`backupmx`,
@@ -3547,6 +3553,7 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
           $mailboxdata['active_int'] = $row['active'];
           $mailboxdata['domain'] = $row['domain'];
           $mailboxdata['domain_xmpp'] = $row['domain_xmpp'];
+          $mailboxdata['relayhost'] = $row['relayhost'];
           $mailboxdata['name'] = $row['name'];
           $mailboxdata['domain_xmpp_prefix'] = $row['domain_xmpp_prefix'];
           $mailboxdata['local_part'] = $row['local_part'];
@@ -3555,10 +3562,6 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
           $mailboxdata['attributes'] = json_decode($row['attributes'], true);
           $mailboxdata['quota_used'] = intval($row['bytes']);
           $mailboxdata['percent_in_use'] = ($row['quota'] == 0) ? '- ' : round((intval($row['bytes']) / intval($row['quota'])) * 100);
-
-          $mailboxdata['last_imap_login'] = $last_imap_login;
-          $mailboxdata['last_smtp_login'] = $last_smtp_login;
-          $mailboxdata['last_pop3_login'] = $last_pop3_login;
 
           if ($mailboxdata['percent_in_use'] === '- ') {
             $mailboxdata['percent_class'] = "info";
@@ -3573,11 +3576,43 @@ function mailbox($_action, $_type, $_data = null, $_extra = null) {
             $mailboxdata['percent_class'] = "success";
           }
 
+          // Determine last logins
+          $stmt = $pdo->prepare("SELECT MAX(`datetime`) AS `datetime`, `service` FROM `sasl_logs`
+            WHERE `username` = :mailbox
+              AND `success` = 1
+                GROUP BY `service` DESC");
+          $stmt->execute(array(':mailbox' => $_data));
+          $SaslLogsData  = $stmt->fetchAll(PDO::FETCH_ASSOC);
+          foreach ($SaslLogsData as $SaslLogs) {
+            if ($SaslLogs['service'] == 'imap') {
+              $last_imap_login = strtotime($SaslLogs['datetime']);
+            }
+            else if ($SaslLogs['service'] == 'smtp') {
+              $last_smtp_login = strtotime($SaslLogs['datetime']);
+            }
+            else if ($SaslLogs['service'] == 'pop3') {
+              $last_pop3_login = strtotime($SaslLogs['datetime']);
+            }
+          }
+          if (!isset($last_imap_login) || $GLOBALS['SHOW_LAST_LOGIN'] === false) {
+            $last_imap_login = 0;
+          }
+          if (!isset($last_smtp_login) || $GLOBALS['SHOW_LAST_LOGIN'] === false) {
+            $last_smtp_login = 0;
+          }
+          if (!isset($last_pop3_login) || $GLOBALS['SHOW_LAST_LOGIN'] === false) {
+            $last_pop3_login = 0;
+          }
+          $mailboxdata['last_imap_login'] = $last_imap_login;
+          $mailboxdata['last_smtp_login'] = $last_smtp_login;
+          $mailboxdata['last_pop3_login'] = $last_pop3_login;
+
           if (!isset($_extra) || $_extra != 'reduced') {
             $rl = ratelimit('get', 'mailbox', $_data);
             $stmt = $pdo->prepare("SELECT `maxquota`, `quota` FROM  `domain` WHERE `domain` = :domain");
             $stmt->execute(array(':domain' => $row['domain']));
             $DomainQuota  = $stmt->fetch(PDO::FETCH_ASSOC);
+
             $stmt = $pdo->prepare("SELECT IFNULL(COUNT(`active`), 0) AS `pushover_active` FROM `pushover` WHERE `username` = :username AND `active` = 1");
             $stmt->execute(array(':username' => $_data));
             $PushoverActive  = $stmt->fetch(PDO::FETCH_ASSOC);
