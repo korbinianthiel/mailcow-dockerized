@@ -1,3 +1,5 @@
+// Base64 functions
+var Base64={_keyStr:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",encode:function(r){var t,e,o,a,h,n,c,d="",C=0;for(r=Base64._utf8_encode(r);C<r.length;)a=(t=r.charCodeAt(C++))>>2,h=(3&t)<<4|(e=r.charCodeAt(C++))>>4,n=(15&e)<<2|(o=r.charCodeAt(C++))>>6,c=63&o,isNaN(e)?n=c=64:isNaN(o)&&(c=64),d=d+this._keyStr.charAt(a)+this._keyStr.charAt(h)+this._keyStr.charAt(n)+this._keyStr.charAt(c);return d},decode:function(r){var t,e,o,a,h,n,c="",d=0;for(r=r.replace(/[^A-Za-z0-9\+\/\=]/g,"");d<r.length;)t=this._keyStr.indexOf(r.charAt(d++))<<2|(a=this._keyStr.indexOf(r.charAt(d++)))>>4,e=(15&a)<<4|(h=this._keyStr.indexOf(r.charAt(d++)))>>2,o=(3&h)<<6|(n=this._keyStr.indexOf(r.charAt(d++))),c+=String.fromCharCode(t),64!=h&&(c+=String.fromCharCode(e)),64!=n&&(c+=String.fromCharCode(o));return c=Base64._utf8_decode(c)},_utf8_encode:function(r){r=r.replace(/\r\n/g,"\n");for(var t="",e=0;e<r.length;e++){var o=r.charCodeAt(e);o<128?t+=String.fromCharCode(o):o>127&&o<2048?(t+=String.fromCharCode(o>>6|192),t+=String.fromCharCode(63&o|128)):(t+=String.fromCharCode(o>>12|224),t+=String.fromCharCode(o>>6&63|128),t+=String.fromCharCode(63&o|128))}return t},_utf8_decode:function(r){for(var t="",e=0,o=c1=c2=0;e<r.length;)(o=r.charCodeAt(e))<128?(t+=String.fromCharCode(o),e++):o>191&&o<224?(c2=r.charCodeAt(e+1),t+=String.fromCharCode((31&o)<<6|63&c2),e+=2):(c2=r.charCodeAt(e+1),c3=r.charCodeAt(e+2),t+=String.fromCharCode((15&o)<<12|(63&c2)<<6|63&c3),e+=3);return t}};
 $(document).ready(function() {
   // Spam score slider
   var spam_slider = $('#spam_score')[0];
@@ -72,17 +74,15 @@ jQuery(function($){
   }
   acl_data = JSON.parse(acl);
 
-  $('.clear-last-logins').on('click', function () {
-    if (confirm(lang.delete_ays)) {
-      last_logins('reset');
-    }
-  })
+  $('.clear-last-logins').on('click', function () {if (confirm(lang.delete_ays)) {last_logins('reset');}})
+  $(".login-history").on('click', function(e) {e.preventDefault(); last_logins('get', $(this).data('days'));$(this).addClass('active').siblings().removeClass('active');});
 
-  function last_logins(action) {
+  function last_logins(action, days = 1) {
     if (action == 'get') {
+      $('.last-login').html('<i class="bi bi-hourglass"></i>' +  lang.waiting);
       $.ajax({
         dataType: 'json',
-        url: '/api/v1/get/last-login/' + encodeURIComponent(mailcow_cc_username),
+        url: '/api/v1/get/last-login/' + encodeURIComponent(mailcow_cc_username) + '/' + days,
         jsonp: false,
         error: function () {
           console.log('error reading last logins');
@@ -99,18 +99,11 @@ jQuery(function($){
             $.each(data.sasl, function (i, item) {
               var datetime = new Date(item.datetime.replace(/-/g, "/"));
               var local_datetime = datetime.toLocaleDateString(undefined, {year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit"});
-              if (item.service == "smtp") { service = '<div class="label label-default">' + item.service.toUpperCase() + '<i class="bi bi-chevron-compact-right"></i></div>'; }
-              else if (item.service == "imap") { service = '<div class="label label-default"><i class="bi bi-chevron-compact-left"></i> ' + item.service.toUpperCase() + '</div>'; }
-              else { service = '<div class="label label-default">' + item.service.toUpperCase() + '</div>'; }
-              if (item.real_rip.startsWith("Web")) {
-                real_rip = item.real_rip;
-              } else {
-                real_rip = '<a href="https://bgp.he.net/ip/' + item.real_rip + '" target="_blank">' + item.real_rip + '</a>';
-              }
-              $('.last-login').append('<li class="list-group-item">' + 
-                local_datetime + ' ' + service + ' ' + lang.from + ' ' +
-                real_rip +
-              '</li>');
+              item.app_password ? app_password = ' <a href="/edit/app-passwd/' + item.app_password + '">(App)</a>' : app_password = "", item.location ? ip_location = ' <span class="flag-icon flag-icon-' + item.location.toLowerCase() + '"></span>' : ip_location = "";
+              "smtp" == item.service ? service = '<div class="label label-default">' + item.service.toUpperCase() + '<i class="bi bi-chevron-compact-right"></i></div>' : "imap" == item.service ? service = '<div class="label label-default"><i class="bi bi-chevron-compact-left"></i> ' + item.service.toUpperCase() + "</div>" : service = '<div class="label label-default">' + item.service.toUpperCase() + "</div>";
+              item.real_rip.startsWith("Web") ? real_rip = item.real_rip : real_rip = '<a href="https://bgp.he.net/ip/' + item.real_rip + '" target="_blank">' + item.real_rip + "</a>";
+              ip_data = real_rip + ip_location + app_password;
+              $(".last-login").append('<li class="list-group-item">' + local_datetime + " " + service + " " + lang.from + " " + ip_data + "</li>");
             })
             $('.last-login').append('</ul>');
           }
@@ -134,7 +127,7 @@ jQuery(function($){
   function draw_tla_table() {
     ft_tla_table = FooTable.init('#tla_table', {
       "columns": [
-        {"name":"chkbox","title":"","style":{"maxWidth":"40px","width":"40px","text-align":"center"},"filterable": false,"sortable": false,"type":"html"},
+        {"name":"chkbox","title":"","style":{"min-width":"60px","width":"60px","text-align":"center"},"filterable": false,"sortable": false,"type":"html"},
         {"name":"address","title":lang.alias},
         {"name":"validity","formatter":function unix_time_format(tm) { var date = new Date(tm ? tm * 1000 : 0); return date.toLocaleDateString(undefined, {year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit"});},"title":lang.alias_valid_until,"style":{"width":"170px"}},
         {"sorted": true,"sortValue": function(value){res = new Date(value);return res.getTime();},"direction":"DESC","name":"created","formatter":function date_format(datetime) { var date = new Date(datetime.replace(/-/g, "/")); return date.toLocaleDateString(undefined, {year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit"});},"title":lang.created_on,"style":{"width":"170px"}},
@@ -151,7 +144,7 @@ jQuery(function($){
         success: function (data) {
           $.each(data, function (i, item) {
             if (acl_data.spam_alias === 1) {
-              item.action = '<div class="btn-group">' +
+              item.action = '<div class="btn-group footable-actions">' +
                 '<a href="#" data-action="delete_selected" data-id="single-tla" data-api-url="delete/time_limited_alias" data-item="' + encodeURIComponent(item.address) + '" class="btn btn-xs btn-danger"><i class="bi bi-trash"></i> ' + lang.remove + '</a>' +
                 '</div>';
               item.chkbox = '<input type="checkbox" data-id="tla" name="multi_select" value="' + encodeURIComponent(item.address) + '" />';
@@ -179,7 +172,7 @@ jQuery(function($){
   function draw_sync_job_table() {
     ft_syncjob_table = FooTable.init('#sync_job_table', {
       "columns": [
-        {"name":"chkbox","title":"","style":{"maxWidth":"60px","width":"60px","text-align":"center"},"filterable": false,"sortable": false,"type":"html"},
+        {"name":"chkbox","title":"","style":{"min-width":"60px","width":"60px","text-align":"center"},"filterable": false,"sortable": false,"type":"html"},
         {"sorted": true,"name":"id","title":"ID","style":{"maxWidth":"60px","width":"60px","text-align":"center"}},
         {"name":"server_w_port","title":"Server"},
         {"name":"enc1","title":lang.encryption,"breakpoints":"all"},
@@ -203,7 +196,7 @@ jQuery(function($){
         success: function (data) {
           $.each(data, function (i, item) {
             item.user1 = escapeHtml(item.user1);
-            item.log = '<a href="#syncjobLogModal" data-toggle="modal" data-syncjob-id="' + item.id + '">Open logs</a>'
+            item.log = '<a href="#syncjobLogModal" data-toggle="modal" data-syncjob-id="' + item.id + '">' + lang.open_logs + '</a>'
             if (!item.exclude > 0) {
               item.exclude = '-';
             } else {
@@ -211,9 +204,9 @@ jQuery(function($){
             }
             item.server_w_port = escapeHtml(item.user1 + '@' + item.host1 + ':' + item.port1);
             if (acl_data.syncjobs === 1) {
-              item.action = '<div class="btn-group">' +
-                '<a href="/edit/syncjob/' + item.id + '" class="btn btn-xs btn-default"><i class="bi bi-pencil-fill"></i> ' + lang.edit + '</a>' +
-                '<a href="#" data-action="delete_selected" data-id="single-syncjob" data-api-url="delete/syncjob" data-item="' + item.id + '" class="btn btn-xs btn-danger"><i class="bi bi-trash"></i> ' + lang.remove + '</a>' +
+              item.action = '<div class="btn-group footable-actions">' +
+                '<a href="/edit/syncjob/' + item.id + '" class="btn btn-xs btn-xs-half btn-default"><i class="bi bi-pencil-fill"></i> ' + lang.edit + '</a>' +
+                '<a href="#" data-action="delete_selected" data-id="single-syncjob" data-api-url="delete/syncjob" data-item="' + item.id + '" class="btn btn-xs btn-xs-half btn-danger"><i class="bi bi-trash"></i> ' + lang.remove + '</a>' +
                 '</div>';
               item.chkbox = '<input type="checkbox" data-id="syncjob" name="multi_select" value="' + item.id + '" />';
             }
@@ -265,9 +258,9 @@ jQuery(function($){
           $.each(data, function (i, item) {
             item.name = escapeHtml(item.name);
             if (acl_data.app_passwds === 1) {
-              item.action = '<div class="btn-group">' +
-                '<a href="/edit/app-passwd/' + item.id + '" class="btn btn-xs btn-default"><i class="bi bi-pencil-fill"></i> ' + lang.edit + '</a>' +
-                '<a href="#" data-action="delete_selected" data-id="single-apppasswd" data-api-url="delete/app-passwd" data-item="' + item.id + '" class="btn btn-xs btn-danger"><i class="bi bi-trash"></i> ' + lang.remove + '</a>' +
+              item.action = '<div class="btn-group footable-actions">' +
+                '<a href="/edit/app-passwd/' + item.id + '" class="btn btn-xs btn-xs-half btn-default"><i class="bi bi-pencil-fill"></i> ' + lang.edit + '</a>' +
+                '<a href="#" data-action="delete_selected" data-id="single-apppasswd" data-api-url="delete/app-passwd" data-item="' + item.id + '" class="btn btn-xs btn-xs-half btn-danger"><i class="bi bi-trash"></i> ' + lang.remove + '</a>' +
                 '</div>';
               item.chkbox = '<input type="checkbox" data-id="apppasswd" name="multi_select" value="' + item.id + '" />';
             }

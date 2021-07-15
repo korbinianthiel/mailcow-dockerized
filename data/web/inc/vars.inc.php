@@ -79,9 +79,29 @@ $DETECT_LANGUAGE = true;
 $DEFAULT_LANG = 'en';
 
 // Available languages
-// Use (ISO 639-1) Code standard 
-// See https://www.loc.gov/standards/iso639-2/php/code_list.php
-$AVAILABLE_LANGUAGES = array('ca', 'cs', 'da', 'de', 'en', 'es', 'fi', 'fr', 'hu', 'it', 'ko', 'lv', 'nl', 'pl', 'pt', 'ro', 'ru', 'sk', 'sv', 'zh');
+// https://www.iso.org/obp/ui/#search
+// https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
+$AVAILABLE_LANGUAGES = array(
+  'cs' => 'Čeština (Czech)',
+  'da' => 'Danish (Dansk)',
+  'de' => 'Deutsch (German)',
+  'en' => 'English',
+  'es' => 'Español (Spanish)',
+  'fi' => 'Suomi (Finish)',
+  'fr' => 'Français (French)',
+  'hu' => 'Magyar (Hungarian)',
+  'it' => 'Italiano (Italian)',
+  'ko' => '한국어 (Korean)',
+  'lv' => 'latviešu (Latvian)',
+  'nl' => 'Nederlands (Dutch)',
+  'pl' => 'Język Polski (Polish)',
+  'pt' => 'Português (Portuguese)',
+  'ro' => 'Română (Romanian)',
+  'ru' => 'Pусский (Russian)',
+  'sk' => 'Slovenčina (Slovak)',
+  'sv' => 'Svenska (Swedish)',
+  'zh' => '中文 (Chinese)'
+);
 
 // Change theme (default: lumen)
 // Needs to be one of those: cerulean, cosmo, cyborg, darkly, flatly, journal, lumen, paper, readable, sandstone,
@@ -119,9 +139,6 @@ $OTP_LABEL = "mailcow UI";
 // How long to wait (in s) for cURL Docker requests
 $DOCKER_TIMEOUT = 60;
 
-// Anonymize IPs logged via UI
-$ANONYMIZE_IPS = true;
-
 // Split DKIM key notation (bind format)
 $SPLIT_DKIM_255 = false;
 
@@ -157,12 +174,6 @@ $MAILBOX_DEFAULT_ATTRIBUTES['pop3_access'] = true;
 
 // Mailbox has SMTP access by default
 $MAILBOX_DEFAULT_ATTRIBUTES['smtp_access'] = true;
-
-// Mailbox has XMPP access by default (if domain has XMPP enabled)
-$MAILBOX_DEFAULT_ATTRIBUTES['xmpp_access'] = true;
-
-// Mailbox is XMPP admin by default (bad)
-$MAILBOX_DEFAULT_ATTRIBUTES['xmpp_admin'] = false;
 
 // Mailbox receives notifications about...
 // "add_header" - mail that was put into the Junk folder
