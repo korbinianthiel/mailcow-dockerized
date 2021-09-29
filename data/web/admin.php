@@ -18,7 +18,7 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
       <ul class="dropdown-menu">
         <li class="active" data-dont-remember="1" role="presentation"><a href="#tab-config-admins" aria-controls="tab-config-admins" role="tab" data-toggle="tab"><?=$lang['admin']['admins'];?></a></li>
         <!-- <li role="presentation"><a href="#tab-config-ldap-admins" aria-controls="tab-config-ldap-admins" role="tab" data-toggle="tab"><?=$lang['admin']['admins_ldap'];?></a></li> -->
-        <li role="presentation"><a href="#tab-config-oauth2" aria-controls="tab-config-oauth2" role="tab" data-toggle="tab">OAuth2 Apps</a></li>
+        <li role="presentation"><a href="#tab-config-oauth2" aria-controls="tab-config-oauth2" role="tab" data-toggle="tab"><?=$lang['admin']['oauth2_apps'];?></a></li>
         <li role="presentation"><a href="#tab-config-rspamd" aria-controls="tab-config-rspamd" role="tab" data-toggle="tab">Rspamd UI</a></li>
       </ul>
     </li>
@@ -81,7 +81,7 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
         <div class="row">
           <div class="col-sm-3 col-xs-5 text-right"><?=$lang['tfa']['tfa'];?>:</div>
           <div class="col-sm-9 col-xs-7">
-            <p id="tfa_pretty"><?=$tfa_data['pretty'];?></p>
+            <p id="tfa_pretty"><?=(isset($tfa_data['pretty'])) ? $tfa_data['pretty'] : '';?></p>
               <div id="tfa_keys">
                 <?php
                 if (!empty($tfa_data['additional'])) {
@@ -133,7 +133,7 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
                 ?>
                 <tr>
                   <td>
-                    <?=($_SESSION['fido2_cid'] == $key_info['cid']) ? '<i class="bi bi-unlock-fill"></i> ' : NULL; ?><?=(!empty($key_info['fn']))?$key_info['fn']:$key_info['subject'];?>
+                    <?=(isset($_SESSION['fido2_cid']) && $_SESSION['fido2_cid'] == $key_info['cid']) ? '<i class="bi bi-unlock-fill"></i> ' : NULL; ?><?=(!empty($key_info['fn']))?$key_info['fn']:$key_info['subject'];?>
                   </td>
                   <td style="min-width:240px;text-align: right">
                     <form style="display:inline;" method="post">
@@ -156,7 +156,15 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
         </div>
         <div class="row">
           <div class="col-sm-offset-3 col-sm-9">
-            <button class="btn btn-sm btn-primary visible-xs-block visible-sm-inline visible-md-inline visible-lg-inline" id="register-fido2"><?=$lang['fido2']['set_fido2'];?></button>
+	        <div class="btn-group">
+              <button class="btn btn-sm btn-xs-lg btn-primary" id="register-fido2"><?=$lang['fido2']['set_fido2'];?></button>
+              <button type="button" class="btn btn-sm btn-xs-lg btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span class="caret"></span>
+              </button>
+              <ul class="dropdown-menu">
+                <li><a href="#" id="register-fido2-touchid" style="line-height:1.4;"><i class="bi bi-shield-fill-check"></i> <?=$lang['fido2']['set_fido2_touchid'];?></a></li>
+              </ul>
+	        </div>
           </div>
         </div>
         <br>
@@ -215,20 +223,20 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
           <div class="col-lg-6">
             <div class="panel panel-default">
               <div class="panel-heading">
-                <h4 class="panel-title"><i class="bi bi-file-earmark-arrow-down"></i> Read-Only Access</h4>
+                <h4 class="panel-title"><i class="bi bi-file-earmark-arrow-down"></i> <?=$lang['admin']['api_read_only'];?></h4>
               </div>
                 <div class="panel-body">
                   <form class="form-horizontal" autocapitalize="none" autocorrect="off" role="form" method="post">
                     <div class="form-group">
                       <label class="control-label col-sm-3" for="allow_from_ro"><?=$lang['admin']['api_allow_from'];?>:</label>
                       <div class="col-sm-9">
-                        <textarea class="form-control textarea-code" rows="7" name="allow_from" id="allow_from_ro" <?=($api_ro['skip_ip_check'] == 1) ? 'disabled' : null;?> required><?=htmlspecialchars($api_ro['allow_from']);?></textarea>
+                        <textarea class="form-control textarea-code" rows="7" name="allow_from" id="allow_from_ro" <?=(isset($api_ro['skip_ip_check']) && $api_ro['skip_ip_check'] == 1) ? 'disabled' : null;?> required><?=(isset($api_ro['allow_from'])) ? htmlspecialchars($api_ro['allow_from']) : '';?></textarea>
                       </div>
                     </div>
                     <div class="form-group">
                       <div class="col-sm-offset-3 col-sm-9">
                         <label>
-                          <input type="checkbox" name="skip_ip_check" id="skip_ip_check_ro" <?=($api_ro['skip_ip_check'] == 1) ? 'checked' : null;?>> <?=$lang['admin']['api_skip_ip_check'];?>
+                          <input type="checkbox" name="skip_ip_check" id="skip_ip_check_ro" <?=(isset($api_ro['skip_ip_check']) && $api_ro['skip_ip_check'] == 1) ? 'checked' : null;?>> <?=$lang['admin']['api_skip_ip_check'];?>
                         </label>
                       </div>
                     </div>
@@ -241,7 +249,7 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
                     <div class="form-group">
                       <div class="col-sm-offset-3 col-sm-9">
                         <label>
-                          <input type="checkbox" name="active" <?=($api_ro['active'] == 1) ? 'checked' : null;?>> <?=$lang['admin']['activate_api'];?>
+                          <input type="checkbox" name="active" <?=(isset($api_ro['active']) && $api_ro['active'] == 1) ? 'checked' : null;?>> <?=$lang['admin']['activate_api'];?>
                         </label>
                       </div>
                     </div>
@@ -260,7 +268,7 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
           <div class="col-lg-6">
             <div class="panel panel-default">
               <div class="panel-heading">
-                <h4 class="panel-title"><i class="bi bi-file-earmark-diff"></i> Read-Write Access</h4>
+                <h4 class="panel-title"><i class="bi bi-file-earmark-diff"></i> <?=$lang['admin']['api_read_write'];?></h4>
               </div>
                 <div class="panel-body">
                   <form class="form-horizontal" autocapitalize="none" autocorrect="off" role="form" method="post">
@@ -343,7 +351,7 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
 
   <div role="tabpanel" class="tab-pane" id="tab-config-oauth2">
     <div class="panel panel-default">
-    <div class="panel-heading">OAuth2 Apps</div>
+    <div class="panel-heading"><?=$lang['admin']['oauth2_apps'];?></div>
         <div class="panel-body">
           <p><?=$lang['admin']['oauth2_info'];?></p>
           <div class="table-responsive">
@@ -361,7 +369,7 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
                 <li><a data-action="edit_selected" data-id="oauth2_clients" data-api-url='edit/oauth2-client' data-api-attr='{"renew_secret":"1"}' href="#"><?=$lang['admin']['oauth2_renew_secret'];?></a></li>
               </ul>
               <div class="clearfix visible-xs"></div>
-              <a class="btn btn-sm visible-xs-block visible-sm-inline visible-md-inline visible-lg-inline btn-success" data-id="add_oauth2_client" data-toggle="modal" data-target="#addOAuth2ClientModal" href="#"><i class="bi bi-plus-lg"></i> Add OAuth2 client</a>
+              <a class="btn btn-sm visible-xs-block visible-sm-inline visible-md-inline visible-lg-inline btn-success" data-id="add_oauth2_client" data-toggle="modal" data-target="#addOAuth2ClientModal" href="#"><i class="bi bi-plus-lg"></i> <?=$lang['admin']['oauth2_add_client'];?></a>
             </div>
           </div>
         </div>
@@ -971,11 +979,13 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
             <div class="col-sm-8">
               <select data-width="100%" name="exclude_domains" class="selectpicker" title="<?=$lang['tfa']['select'];?>" multiple>
               <?php
-              foreach (array_merge(mailbox('get', 'domains'), mailbox('get', 'alias_domains')) as $domain):
-              ?>
-                <option <?=(in_array($domain, $q_data['exclude_domains'])) ? 'selected' : null;?>><?=htmlspecialchars($domain);?></option>
-              <?php
-              endforeach;
+              if (is_array($q_data['exclude_domains'])) {
+                foreach (array_merge(mailbox('get', 'domains'), mailbox('get', 'alias_domains')) as $domain) {
+                ?>
+                  <option <?=(in_array($domain, $q_data['exclude_domains'])) ? 'selected' : null;?>><?=htmlspecialchars($domain);?></option>
+                <?php
+                }
+              }
               ?>
               </select>
             </div>
@@ -1003,13 +1013,13 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
         <div class="row">
           <div class="col-sm-6">
             <div class="form-group">
-              <label for="quota_notification_sender"><?=$lang['admin']['quarantine_notification_sender'];?>:</label>
+              <label for="quota_notification_sender"><?=$lang['admin']['quota_notification_sender'];?>:</label>
               <input type="email" class="form-control" id="quota_notification_sender" name="sender" value="<?=htmlspecialchars($qw_data['sender']);?>" placeholder="quota-warning@localhost">
             </div>
           </div>
           <div class="col-sm-6">
             <div class="form-group">
-              <label for="quota_notification_subject"><?=$lang['admin']['quarantine_notification_subject'];?>:</label>
+              <label for="quota_notification_subject"><?=$lang['admin']['quota_notification_subject'];?>:</label>
               <input type="text" class="form-control" id="quota_notification_subject" name="subject" value="<?=htmlspecialchars($qw_data['subject']);?>" placeholder="Quota warning">
             </div>
           </div>
@@ -1174,15 +1184,17 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
             </tr>
             <?php
             $app_links = customize('get', 'app_links');
-            foreach ($app_links as $row) {
-              foreach ($row as $key => $val) {
-            ?>
+            if ($app_links) {
+              foreach ($app_links as $row) {
+                foreach ($row as $key => $val) {
+              ?>
             <tr>
               <td><input class="input-sm input-xs-lg form-control" data-id="app_links" type="text" name="app" required value="<?=$key;?>"></td>
               <td><input class="input-sm input-xs-lg form-control" data-id="app_links" type="text" name="href" required value="<?=$val;?>"></td>
               <td><a href="#" role="button" class="btn btn-sm btn-xs-lg btn-default" type="button"><?=$lang['admin']['remove_row'];?></a></td>
             </tr>
             <?php
+                }
               }
             }
             foreach ($MAILCOW_APPS as $app) {
@@ -1214,7 +1226,7 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
             </div>
             <div class="form-group">
               <label for="uitests_apps_name"><?=$lang['admin']['apps_name'];?>:</label>
-              <input type="text" class="form-control" id="uitests_apps_name" name="apps_name" placeholder="mailcow Apps" value="<?=$ui_texts['apps_name'];?>">
+              <input type="text" class="form-control" id="uitests_apps_name" name="apps_name" placeholder="<?=$lang['header']['apps']?>" value="<?=$ui_texts['apps_name'];?>">
             </div>
             <div class="form-group">
               <label for="help_text"><?=$lang['admin']['help_text'];?>:</label>
@@ -1433,7 +1445,7 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
       </div>
       <div class="panel-body">
         <p><?=$lang['admin']['rspamd_global_filters_info'];?></p>
-        <div id="confirm_show_rspamd_global_filters" class="<?=($_SESSION['show_rspamd_global_filters'] === true) ? 'hidden' : '';?>">
+        <div id="confirm_show_rspamd_global_filters" class="<?=(!isset($_SESSION['show_rspamd_global_filters']) || $_SESSION['show_rspamd_global_filters'] !== true) ? '' : 'hidden';?>">
           <div class="form-group">
             <div class="col-sm-offset-2 col-sm-10">
               <label>
@@ -1442,7 +1454,7 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
             </div>
           </div>
         </div>
-        <div id="rspamd_global_filters" class="<?=($_SESSION['show_rspamd_global_filters'] !== true) ? 'hidden' : '';?>">
+        <div id="rspamd_global_filters" class="<?=(isset($_SESSION['show_rspamd_global_filters']) && $_SESSION['show_rspamd_global_filters'] === true) ? '' : 'hidden';?>">
         <hr>
         <span class="anchor" id="regexmaps"></span>
         <h4><?=$lang['admin']['regex_maps'];?></h4>
@@ -1506,7 +1518,7 @@ $js_minifier->add('/web/js/presets/rspamd.js');
 $js_minifier->add('/web/js/site/pwgen.js');
 require_once $_SERVER['DOCUMENT_ROOT'] . '/inc/footer.inc.php';
 } else {
-	header('Location: /');
-	exit();
+  header('Location: /');
+  exit();
 }
 ?>

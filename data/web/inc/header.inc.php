@@ -105,12 +105,12 @@
           <li><a href data-toggle="modal" data-container="sogo-mailcow" data-target="#RestartContainer"><i class="bi bi-arrow-repeat"></i> <?= $lang['header']['restart_sogo']; ?></a></li>
           <?php } ?>
           <li class="dropdown">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><i class="bi bi-link-45deg"></i> <?= $lang['header']['apps']; ?> <span class="caret"></span></a>
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><i class="bi bi-link-45deg"></i> <?=$UI_TEXTS['apps_name'];?> <span class="caret"></span></a>
             <ul class="dropdown-menu" role="menu">
             <?php foreach ($MAILCOW_APPS as $app) {
               if (getenv('SKIP_SOGO') == "y" && preg_match('/^\/SOGo/i', $app['link'])) { continue; }
             ?>
-              <li title="<?= htmlspecialchars($app['description']); ?>"><a href="<?= htmlspecialchars($app['link']); ?>"><?= htmlspecialchars($app['name']); ?></a></li>
+              <li title="<?=(isset($app['description'])) ? htmlspecialchars($app['description']) : '';?>"><a href="<?=(isset($app['link'])) ? htmlspecialchars($app['link']) : '';?>"><?=(isset($app['name'])) ? htmlspecialchars($app['name']) : '';?></a></li>
             <?php
             }
             $app_links = customize('get', 'app_links');
