@@ -171,7 +171,7 @@ remove_obsolete_nginx_ports() {
 detect_docker_compose_command(){
 if ! [[ "${DOCKER_COMPOSE_VERSION}" =~ ^(native|standalone)$ ]]; then
   if docker compose > /dev/null 2>&1; then
-      if docker compose version --short | grep "2." > /dev/null 2>&1; then
+      if docker compose version --short | grep -e "^2." -e "^v2." > /dev/null 2>&1; then
         DOCKER_COMPOSE_VERSION=native
         COMPOSE_COMMAND="docker compose"
         echo -e "\e[33mFound Docker Compose Plugin (native).\e[0m"
@@ -181,7 +181,7 @@ if ! [[ "${DOCKER_COMPOSE_VERSION}" =~ ^(native|standalone)$ ]]; then
         echo -e "\e[33mNotice: You'll have to update this Compose Version via your Package Manager manually!\e[0m"
       else
         echo -e "\e[31mCannot find Docker Compose with a Version Higher than 2.X.X.\e[0m" 
-        echo -e "\e[31mPlease update/install it manually regarding to this doc site: https://docs.mailcow.email/i_u_m/i_u_m_install/\e[0m"
+        echo -e "\e[31mPlease update/install it manually regarding to this doc site: https://docs.mailcow.email/install/\e[0m"
         exit 1
       fi
   elif docker-compose > /dev/null 2>&1; then
@@ -196,14 +196,14 @@ if ! [[ "${DOCKER_COMPOSE_VERSION}" =~ ^(native|standalone)$ ]]; then
         echo -e "\e[33mNotice: For an automatic update of docker-compose please use the update_compose.sh scripts located at the helper-scripts folder.\e[0m"
       else
         echo -e "\e[31mCannot find Docker Compose with a Version Higher than 2.X.X.\e[0m" 
-        echo -e "\e[31mPlease update/install regarding to this doc site: https://docs.mailcow.email/i_u_m/i_u_m_install/\e[0m"
+        echo -e "\e[31mPlease update/install regarding to this doc site: https://docs.mailcow.email/install/\e[0m"
         exit 1
       fi
     fi
 
   else
     echo -e "\e[31mCannot find Docker Compose.\e[0m" 
-    echo -e "\e[31mPlease install it regarding to this doc site: https://docs.mailcow.email/i_u_m/i_u_m_install/\e[0m"
+    echo -e "\e[31mPlease install it regarding to this doc site: https://docs.mailcow.email/install/\e[0m"
     exit 1
   fi
 
@@ -216,7 +216,7 @@ elif [ "${DOCKER_COMPOSE_VERSION}" == "native" ]; then
     if ! $COMPOSE_COMMAND > /dev/null 2>&1 || ! $COMPOSE_COMMAND --version | grep "^2." > /dev/null 2>&1; then
       # IF it cannot find Standalone in > 2.X, then script stops
       echo -e "\e[31mCannot find Docker Compose or the Version is lower then 2.X.X.\e[0m" 
-      echo -e "\e[31mPlease install it regarding to this doc site: https://docs.mailcow.email/i_u_m/i_u_m_install/\e[0m"
+      echo -e "\e[31mPlease install it regarding to this doc site: https://docs.mailcow.email/install/\e[0m"
       exit 1
     fi
       # If it finds the standalone Plugin it will use this instead and change the mailcow.conf Variable accordingly
@@ -236,7 +236,7 @@ elif [ "${DOCKER_COMPOSE_VERSION}" == "standalone" ]; then
     if ! $COMPOSE_COMMAND > /dev/null 2>&1; then
       # IF it cannot find Native in > 2.X, then script stops
       echo -e "\e[31mCannot find Docker Compose.\e[0m" 
-      echo -e "\e[31mPlease install it regarding to this doc site: https://docs.mailcow.email/i_u_m/i_u_m_install/\e[0m"
+      echo -e "\e[31mPlease install it regarding to this doc site: https://docs.mailcow.email/install/\e[0m"
       exit 1
     fi
       # If it finds the native Plugin it will use this instead and change the mailcow.conf Variable accordingly
@@ -441,7 +441,10 @@ CONFIG_ARRAY=(
   "SKIP_SOGO"
   "USE_WATCHDOG"
   "WATCHDOG_NOTIFY_EMAIL"
+  "WATCHDOG_NOTIFY_WEBHOOK"
+  "WATCHDOG_NOTIFY_WEBHOOK_BODY"
   "WATCHDOG_NOTIFY_BAN"
+  "WATCHDOG_NOTIFY_START"
   "WATCHDOG_EXTERNAL_CHECKS"
   "WATCHDOG_SUBJECT"
   "SKIP_CLAMD"
@@ -623,11 +626,32 @@ for option in ${CONFIG_ARRAY[@]}; do
       echo "#MAILDIR_SUB=Maildir" >> mailcow.conf
       echo "MAILDIR_SUB=" >> mailcow.conf
     fi
+  elif [[ ${option} == "WATCHDOG_NOTIFY_WEBHOOK" ]]; then
+    if ! grep -q ${option} mailcow.conf; then
+      echo "Adding new option \"${option}\" to mailcow.conf"
+      echo '# Send notifications to a webhook URL that receives a POST request with the content type "application/json".' >> mailcow.conf
+      echo '# You can use this to send notifications to services like Discord, Slack and others.' >> mailcow.conf
+      echo '#WATCHDOG_NOTIFY_WEBHOOK=https://discord.com/api/webhooks/XXXXXXXXXXXXXXXXXXX/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' >> mailcow.conf
+    fi
+  elif [[ ${option} == "WATCHDOG_NOTIFY_WEBHOOK_BODY" ]]; then
+    if ! grep -q ${option} mailcow.conf; then
+      echo "Adding new option \"${option}\" to mailcow.conf"
+      echo '# JSON body included in the webhook POST request. Needs to be in single quotes.' >> mailcow.conf
+      echo '# Following variables are available: SUBJECT, BODY' >> mailcow.conf
+      WEBHOOK_BODY='{"username": "mailcow Watchdog", "content": "**${SUBJECT}**\n${BODY}"}'
+      echo "#WATCHDOG_NOTIFY_WEBHOOK_BODY='${WEBHOOK_BODY}'" >> mailcow.conf
+    fi
   elif [[ ${option} == "WATCHDOG_NOTIFY_BAN" ]]; then
     if ! grep -q ${option} mailcow.conf; then
       echo "Adding new option \"${option}\" to mailcow.conf"
       echo '# Notify about banned IP. Includes whois lookup.' >> mailcow.conf
       echo "WATCHDOG_NOTIFY_BAN=y" >> mailcow.conf
+    fi
+  elif [[ ${option} == "WATCHDOG_NOTIFY_START" ]]; then
+    if ! grep -q ${option} mailcow.conf; then
+      echo "Adding new option \"${option}\" to mailcow.conf"
+      echo '# Send a notification when the watchdog is started.' >> mailcow.conf
+      echo "WATCHDOG_NOTIFY_START=y" >> mailcow.conf
     fi
   elif [[ ${option} == "WATCHDOG_SUBJECT" ]]; then
     if ! grep -q ${option} mailcow.conf; then
